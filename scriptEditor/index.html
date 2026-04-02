@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TellTell Script Editor</title>
+    <link rel="stylesheet" href="./src/style.css" />
+    <!-- LiteGraph CSS -->
+    <link rel="stylesheet" type="text/css" href="/node_modules/litegraph.js/css/litegraph.css">
+  </head>
+  <body>
+    <div id="app">
+      <!-- Left Sidebar: Characters & Episodes -->
+      <aside class="sidebar">
+        <header class="sidebar-header">TellTell Editor</header>
+        
+        <div class="secondary-header">Project Root</div>
+        <div style="padding: 10px;">
+            <button id="open-dir-btn" style="width: 100%; font-size: 0.8rem;">Select Folder...</button>
+            <div id="dir-path" style="font-size: 0.7rem; opacity: 0.5; margin-top: 5px; word-break: break-all;">No folder selected</div>
+        </div>
+
+        <div class="secondary-header">Characters & Events</div>
+        <section class="char-list" id="char-list">
+          <div class="char-group">
+            <div class="char-item active" data-id="aoi">Aoi (Protagonist)</div>
+            <div class="event-list active">
+                <div class="event-item">Prologue.json</div>
+                <div class="event-item">Daily_1.json</div>
+            </div>
+          </div>
+          <div class="char-group">
+            <div class="char-item" data-id="yuki">Yuki</div>
+            <div class="event-list">
+                <div class="event-item">Meeting.json</div>
+            </div>
+          </div>
+        </section>
+        <footer style="padding: 15px; border-top: 1px solid var(--border-color);">
+          <button style="width: 100%;">Add Character</button>
+        </footer>
+      </aside>
+
+      <!-- Main Editor Container -->
+      <main class="editor-container">
+        <header class="toolbar">
+          <button class="primary" id="save-btn">Save Current</button>
+          <button id="publish-btn" style="background: #e67e22;">Publish Bundle</button>
+          <div style="flex: 1;"></div>
+          <span id="status" style="font-size: 0.8rem; opacity: 0.6;">Ready</span>
+          <button id="play-btn" style="background: #27ae60;">Preview Game</button>
+        </header>
+
+        <!-- Canvas for DAG Flow -->
+        <canvas id="main-canvas" width="1024" height="720"></canvas>
+      </main>
+
+      <!-- Right Sidebar: Properties -->
+      <aside class="property-panel" id="prop-panel">
+        <h3>Node Properties</h3>
+        <div id="prop-content"></div>
+      </aside>
+    </div>
+
+    <!-- Main Entry Script -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
