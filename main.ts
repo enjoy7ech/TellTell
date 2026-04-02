@@ -2,6 +2,8 @@ import { Engine } from './core/Engine';
 import { PhoneSystem } from './plugins/PhoneSystem';
 import { CharacterManager } from './core/CharacterManager';
 import { MapManager } from './core/MapManager';
+import { RequirementManager } from './core/requirement';
+import { DateTimeManager } from './core/DateTime';
 
 async function bootstrap() {
     console.log("Bootstraping TellTell Test Environment...");
@@ -9,16 +11,20 @@ async function bootstrap() {
     // 1. 实例化核心组件
     const characterManager = new CharacterManager();
     const mapManager = new MapManager();
+    const requirementManager = new RequirementManager();
+    const dateTimeManager = new DateTimeManager();
     const phoneSystem = new PhoneSystem();
 
     // 2. 初始化引擎
     const engine = new Engine({
-        storyUrl: '/config/story.json'
+        storyUrl: '/config/bundle_story.json'
     });
 
     // 3. 注册模块到引擎
     engine.registerModule(characterManager);
     engine.registerModule(mapManager);
+    engine.registerModule(requirementManager);
+    engine.registerModule(dateTimeManager);
     engine.registerModule(phoneSystem);
 
     // 4. 加载基础数据 (模拟)

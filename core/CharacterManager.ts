@@ -3,7 +3,8 @@ import { ISerializable, CharacterId, TriggerRequirement } from './Types';
 export interface CharacterData {
     id: CharacterId;
     name: string;
-    favor: number;
+    favor: Map<CharacterId, number>; // 对不同角色的好感度 Map
+    isProtagonist?: boolean;
     info: {
         text: string;
         lock: boolean;
@@ -12,7 +13,7 @@ export interface CharacterData {
 }
 
 /**
- * 角色管理器：负责管理所有 NPC 的状态、好感度、信息解锁
+ * 角色管理器：负责管理所有 NPC 的状态、好感度关系网、信息解锁
  */
 export class CharacterManager implements ISerializable {
     public id: string = "Character";
@@ -23,48 +24,57 @@ export class CharacterManager implements ISerializable {
     /**
      * 注册/初始化角色数据
      */
-    public initCharacters(data: CharacterData[]): void {
-        data.forEach(char => this.characters.set(char.id, char));
+    public initCharacters(data: any[]): void {
+        data.forEach(char => {
+            // 兼容普通对象转 Map
+            if (!(char.favor instanceof Map)) {
+                char.favor = new Map(Object.entries(char.favor || {}));
+            }
+            this.characters.set(char.id, char);
+        });
     }
 
     /**
      * 实现 ISerializable: 存档
      */
     public save(): any {
-        return Array.from(this.characters.values());
+        return Array.from(this.characters.values()).map(char => ({
+            ...char,
+            favor: Object.fromEntries(char.favor)
+        }));
     }
 
     /**
      * 实现 ISerializable: 读档
      */
-    public load(data: CharacterData[]): void {
+    public load(data: any[]): void {
         if (data) {
-            data.forEach(char => this.characters.set(char.id, char));
+            this.initCharacters(data);
         }
     }
 
-    // --- Action (可由 Action.js 调度) ---
+    // --- Action (修改状态) ---
 
-    public async addFavor(charId: CharacterId, amount: number): Promise<void> {
-        const char = this.characters.get(charId);
+    /**
+     * 增加好感度：from 角色对 to 角色的好感增加
+     */
+    public async addFavor(fromId: CharacterId, toId: CharacterId, amount: number): Promise<void> {
+        const char = this.characters.get(fromId);
         if (char) {
-            char.favor += amount;
-            console.log(`[Character] ${char.name} favor +${amount}. Current: ${char.favor}`);
+            const current = char.favor.get(toId) || 0;
+            char.favor.set(toId, current + amount);
+            console.log(`[Character] ${fromId}'s favor for ${toId} +${amount}. Current: ${current + amount}`);
         }
     }
 
-    public async unlockInfo(charId: CharacterId, infoIndex: number): Promise<void> {
-        const char = this.characters.get(charId);
-        if (char && char.info[infoIndex]) {
-            char.info[infoIndex].lock = false;
-        }
-    }
+    // --- Trigger / Query ---
 
-    // --- Trigger (用于节点判定) ---
-
-    public checkFavor(charId: CharacterId, minFavor: number): boolean {
-        const char = this.characters.get(charId);
-        return char ? char.favor >= minFavor : false;
+    /**
+     * 获取指定角色的好感度
+     */
+    public getFavor(fromId: CharacterId, toId: CharacterId): number {
+        const char = this.characters.get(fromId);
+        return char ? (char.favor.get(toId) || 0) : 0;
     }
 
     public isInfoUnlocked(charId: CharacterId, infoIndex: number): boolean {

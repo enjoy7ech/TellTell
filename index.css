@@ -1,0 +1,317 @@
+:root {
+  --primary: hsl(210, 100%, 65%);
+  --accent: hsl(180, 100%, 50%);
+  --bg-fallback: #111;
+  --text-main: #fff;
+  --text-muted: rgba(255, 255, 255, 0.6);
+  --glass: rgba(0, 0, 0, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --font-main: 'Outfit', 'Inter', sans-serif;
+  --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-fallback);
+  color: var(--text-main);
+  font-family: var(--font-main);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Background Background */
+.game-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background-image: url('/assets/ui/main_menu_bg.png');
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.05);
+  animation: bg-pan 30s linear infinite alternate;
+}
+
+@keyframes bg-pan {
+  from { transform: scale(1.05) translateX(-2%); }
+  to { transform: scale(1.05) translateX(2%); }
+}
+
+.bg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 50%, transparent 20%, rgba(0,0,0,0.8) 100%);
+}
+
+/* Menu Container */
+.menu-container {
+  padding-left: 10%;
+  max-width: 600px;
+  z-index: 10;
+  animation: menu-fade-in 1.2s ease-out;
+}
+
+@keyframes menu-fade-in {
+  from { opacity: 0; transform: translateX(-50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.game-title {
+  font-size: clamp(4rem, 10vw, 6rem);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  background: linear-gradient(to right, #fff, var(--primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.game-subtitle {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  letter-spacing: 0.3em;
+  margin-bottom: 4rem;
+}
+
+/* Menu List */
+.menu-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.menu-item {
+  position: relative;
+  font-size: 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--text-muted);
+}
+
+.menu-item:hover {
+  color: #fff;
+  transform: translateX(15px);
+}
+
+.menu-item::before {
+  content: '';
+  width: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: var(--transition);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+.menu-item:hover::before {
+  width: 40px;
+}
+
+.menu-item span {
+  font-size: 0.9rem;
+  opacity: 0.5;
+  margin-left: auto;
+}
+
+/* Version Info */
+.version-info {
+  position: absolute;
+  bottom: 2rem;
+  left: 10%;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+}
+
+/* Loading Overlay (Optional) */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 1s ease;
+  pointer-events: none;
+  opacity: 1;
+}
+
+.loading-screen.hidden {
+  opacity: 0;
+}
+
+/* Game In-Game UI Layer */
+.game-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 20;
+  transition: opacity 1s ease;
+}
+
+.game-bg-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: background-image 1s ease;
+  z-index: -1;
+  background-color: #000;
+}
+
+.character-container {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 80%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.char-portrait {
+  height: 90%;
+  object-fit: contain;
+  transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.5s ease;
+}
+
+/* Dialogue System */
+.dialogue-system {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 1000px;
+  z-index: 100;
+  cursor: pointer;
+}
+
+.dialogue-box {
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 30px 50px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  min-height: 180px;
+  position: relative;
+}
+
+.dialogue-name {
+  position: absolute;
+  top: -20px;
+  left: 30px;
+  background: var(--primary);
+  color: #fff;
+  padding: 8px 30px;
+  border-radius: 5px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.dialogue-content {
+  font-size: 1.35rem;
+  line-height: 1.6;
+  color: #eee;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.dialogue-next-arrow {
+  position: absolute;
+  bottom: 20px;
+  right: 25px;
+  width: 15px;
+  height: 15px;
+  border-right: 3px solid var(--accent);
+  border-bottom: 3px solid var(--accent);
+  transform: rotate(45deg);
+  animation: bounce 1.5s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0) rotate(45deg); }
+  50% { transform: translateY(10px) rotate(45deg); }
+}
+
+/* Choices Overlay */
+.choice-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: -300px;
+  align-items: center;
+  position: absolute;
+  width: 100%;
+}
+
+.choice-btn {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1rem 3rem;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+  text-align: center;
+  color: #fff;
+  font-weight: 600;
+}
+
+.choice-btn:hover {
+  background: var(--primary);
+  border-color: #fff;
+  transform: scale(1.05);
+}
+
+.hidden {
+  display: none !important;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loader {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+    .menu-container { padding-left: 5%; text-align: center; justify-content: center; width: 100%; padding: 0 2rem; }
+    .game-bg { animation: none; transform: scale(1.1); }
+    .bg-overlay { background: rgba(0,0,0,0.6); }
+    .menu-item:hover { transform: translateX(0) scale(1.1); }
+}

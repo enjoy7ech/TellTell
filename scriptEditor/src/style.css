@@ -20,6 +20,7 @@ html {
 
 #app {
   display: flex;
+  flex-flow: row nowrap;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
@@ -27,11 +28,12 @@ html {
 
 /* Sidebar */
 .sidebar {
-  width: 260px;
+  width: 280px;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   z-index: 10;
 }
 
@@ -89,21 +91,30 @@ html {
 }
 
 .event-item {
-  padding: 6px 12px;
-  font-size: 0.9rem;
+  padding: 8px 12px;
+  font-size: 0.85rem;
   cursor: pointer;
   border-radius: 4px;
-  color: #aaa;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-left: 2px solid transparent;
+  transition: all 0.2s ease;
 }
 
 .event-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  background: rgba(52, 152, 219, 0.1);
+  color: #fff;
+  border-left-color: var(--accent-color);
+  padding-left: 15px;
 }
 
 /* Editor Area */
 .editor-container {
   flex: 1;
+  min-width: 0;
+  /* 关键：允许 Flex 容器缩小，不会挤走侧边栏 */
   position: relative;
   display: flex;
   flex-direction: column;
@@ -119,20 +130,76 @@ html {
   gap: 15px;
 }
 
-canvas#main-canvas {
+.canvas-wrapper {
   flex: 1;
+  position: relative;
+  overflow: hidden;
   background-image:
     radial-gradient(circle, #333 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
+canvas#main-canvas {
+  display: block;
+}
+
 /* Modal / Property Editor */
+.property-panel,
+.property-panel * {
+  box-sizing: border-box;
+}
+
 .property-panel {
-  width: 300px;
+  width: 420px;
   background: var(--sidebar-bg);
   border-left: 1px solid var(--border-color);
-  padding: 20px;
-  display: none;
+  padding: 20px 25px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 防止水平溢出 */
+  box-shadow: -10px 0 20px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.property-panel.hidden {
+  display: none !important;
+}
+
+.prop-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.prop-group label {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.prop-group input,
+.prop-group textarea {
+  background: #111;
+  border: 1px solid var(--border-color);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.prop-group input:focus,
+.prop-group textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.prop-group textarea {
+  min-height: 80px;
+  resize: vertical;
 }
 
 button {

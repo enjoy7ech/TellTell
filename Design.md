@@ -81,7 +81,7 @@ DialogState: // 对话
 Choice: // 选项
 {
   text: string; // 选项文本
-  requirement?: TriggerRequirement[]; // 选项触发条件，去requirement.js中执行调用，返回true则视为满足条件（按钮变为可点击状态）
+  requirement?: TriggerRequirement[]; // 选项触发条件，去requirement.ts中执行调用，返回true则视为满足条件（按钮变为可点击状态）
   target?: NodeId; // 若需要强行跳转剧情节点的时候，填入选项目标节点ID
 }
 
@@ -134,10 +134,10 @@ CharacterId: string; // 角色ID
 {
   id: CharacterId; // 角色ID
   name: string; // 角色名称
-  picMap: Map<string, string>; // 角色立绘ID -> 图片ID，默认去 assets/character/portrait/{CharacterId}/{picId}.webp 下加载webp，如aio/laugh
-  audioMap: Map<string, string>; // 角色音频ID -> 音频ID，默认去 assets/character/audio/{CharacterId}/{audioId}.mp3 下加载mp3
+  picMap: Map<string, string>; // 角色立绘ID -> 图片ID，默认去 assets/character/{CharacterId}/portrait/{picId}.webp 下加载webp，如aio/laugh
+  audioMap: Map<string, string>; // 角色音频ID -> 音频ID，默认去 assets/character/{CharacterId}/audio/{audioId}.mp3 下加载mp3
   isProtagonist?: boolean; // 是否为主角，默认false
-  favor: Map<CharacterId, number>; // 对CharacterId角色的好感度
+  favor: Map<CharacterId, number>; // 对CharacterId角色的好感度Map
   phoneNumber?: string; // 角色电话号码
   
   height: number; // 角色身高
@@ -151,7 +151,7 @@ CharacterId: string; // 角色ID
   info: {
       text: string; // 信息文本
       lock: boolean; // 是否锁定，锁定不可见显示？？
-      unlockRequirement: TriggerRequirement[]; // 解锁条件，去requirement.js中执行调用，返回true则视为满足条件
+      unlockRequirement: TriggerRequirement[]; // 解锁条件，去requirement.ts中执行调用，返回true则视为满足条件
   }[]
   load(): void; // 从json中加载角色信息
   renderPortrait(w: number, h: number, picId: string): Promise<void>; // 异步渲染角色立绘
@@ -159,6 +159,32 @@ CharacterId: string; // 角色ID
   renderCharacterPanel(): Promise<void>; // 异步渲染角色面板
 }
 
+-----
+
+DateTime.ts // 时间日期管理 (基于标准毫秒时间戳)
+{
+  currentTime: number; // 累计毫秒级时间戳 (Unix Timestamp)，存档核心值
+  
+  // 转换逻辑：基于 JavaScript 原生 Date API 对齐现实历法 (支持闰年、月份变动)
+  START_TIME: "2024-01-01T08:00:00"; // 引擎默认起点
+
+  // 方法
+  addMinutes(n): Promise<void>; // 增加游戏时间（分钟），内部转换为毫秒
+  nextDayAt(h, m): Promise<void>; // 跳转至明日指定时刻 (Hour, Minute)
+  setAbsoluteTime(dateStr): Promise<void>; // 设置为绝对日期字符串 "2024-05-20T12:00:00"
+  getDateTimeInfo(): DateTimeInfo; // 获取结构化日期 {year, month, day, hour, minute, timestamp}
+  format(): string; // 返回格式化时间字符串 "2024/01/01 08:00"
+}
+
+DateTimeInfo // 结构化日期对象 (由 Date 对象解析)
+{
+  year: number;
+  month: number; // 1-12
+  day: number; // 1-31
+  hour: number;
+  minute: number;
+  timestamp: number; // 原始毫秒数
+}
 
 2. 插件系统
 

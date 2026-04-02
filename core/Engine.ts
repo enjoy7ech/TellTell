@@ -28,14 +28,21 @@ export class Engine {
     private passedNodes: Set<NodeId> = new Set();
     public activeNodes: RuntimeNode[] = [];
     private initialized: boolean = false;
+    private currentNode: StoryEventNode | null = null;
+    private currentFrameIndex: number = -1;
 
     constructor(private config: EngineConfig) {}
 
     /**
      * 注册子系统或插件实例
      */
-    public registerModule(instance: ISerializable & { id?: string }): void {
+    public registerModule(instance: any): void {
         this.instances.push(instance);
+        
+        // 如果模块实现了 bindEngine 接口，则自动注入引擎引用
+        if (typeof (instance as any).bindEngine === 'function') {
+            (instance as any).bindEngine(this);
+        }
     }
 
     /**
@@ -44,8 +51,19 @@ export class Engine {
     public async init(): Promise<void> {
         try {
             const response = await fetch(this.config.storyUrl);
-            const storyData: { nodes: StoryEventNode[] } = await response.json();
+            const storyData: { nodes: StoryEventNode[], characters?: any[] } = await response.json();
+            
+            // 1. 初始化剧情节点
             this.buildDAG(storyData.nodes);
+
+            // 2. 自动初始化 CharacterManager (如果存在数据)
+            if (storyData.characters) {
+                const charMgr = this.getModule('Character');
+                if (charMgr && typeof charMgr.initCharacters === 'function') {
+                    charMgr.initCharacters(storyData.characters);
+                }
+            }
+
             this.initialized = true;
             console.log("TellTell Engine (TS) Initialized.");
         } catch (error) {
@@ -146,6 +164,110 @@ export class Engine {
     private getModule(name: string): any {
         if (name === 'Engine') return this;
         return this.instances.find(inst => inst.id === name || inst.constructor.name === name);
+    }
+
+    /**
+     * 核心剧情主推器
+     */
+    public async playNext(): Promise<void> {
+        if (!this.initialized) await this.init();
+
+        // 1. 若当前无活跃节点，尝试加载初始节点
+        if (!this.currentNode) {
+            this.updateActiveNodes();
+            if (this.activeNodes.length > 0) {
+                this.currentNode = this.activeNodes[0].node;
+                this.currentFrameIndex = 0;
+                await this.executeActions(this.currentNode.mount);
+            } else {
+                console.warn("No active nodes available to start.")
+                return;
+            }
+        } 
+        // 2. 检查当前节点是否已播完
+        else if (this.currentFrameIndex >= this.currentNode.display.length - 1) {
+            // 当前节点完成，步进 DAG
+            const completedId = this.currentNode.id;
+            await this.executeActions(this.currentNode.unMount);
+            await this.step(completedId);
+            
+            // 尝试挑选下一个节点
+            if (this.activeNodes.length > 0) {
+                this.currentNode = this.activeNodes[0].node;
+                this.currentFrameIndex = 0;
+                await this.executeActions(this.currentNode.mount);
+            } else {
+                // 彻底结束或阻塞
+                this.currentNode = null;
+                this.currentFrameIndex = -1;
+                console.log("No more nodes.");
+                return;
+            }
+        } 
+        // 3. 推进下一帧
+        else {
+            this.currentFrameIndex++;
+        }
+
+        // 4. 渲染当前帧
+        const frame = this.currentNode.display[this.currentFrameIndex];
+        this.renderFrame(frame);
+    }
+
+    private async renderFrame(frame: any): Promise<void> {
+        if (!frame) return;
+        
+        // 执行帧前 Action
+        await this.executeActions(frame.pre);
+
+        const nameEl = document.getElementById('charName');
+        const textEl = document.getElementById('dialogueText');
+        const bgEl = document.getElementById('gameBackground');
+        const portraitEl = document.getElementById('charPortrait') as HTMLImageElement;
+        const choiceContainer = document.getElementById('choiceContainer');
+
+        if (frame.dialog) {
+            if (nameEl) nameEl.innerText = frame.dialog.char;
+            if (textEl) textEl.innerText = frame.dialog.text;
+            
+            // 渲染角色立绘
+            if (portraitEl) {
+                if (frame.dialog.pic) {
+                    portraitEl.src = `/assets/character/${frame.dialog.char}/portrait/${frame.dialog.pic}.webp`;
+                    portraitEl.classList.remove('hidden');
+                } else {
+                    portraitEl.classList.add('hidden');
+                }
+            }
+        }
+
+        if (frame.screen && frame.screen.pic && bgEl) {
+            bgEl.style.backgroundImage = `url('/assets/scene/${frame.screen.pic}.webp')`;
+        }
+
+        // 处理选项
+        if (choiceContainer) {
+            choiceContainer.innerHTML = '';
+            if (frame.choice && frame.choice.length > 0) {
+                choiceContainer.classList.remove('hidden');
+                frame.choice.forEach((c: any) => {
+                    const btn = document.createElement('div');
+                    btn.className = 'choice-btn';
+                    btn.innerText = c.text;
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        choiceContainer.classList.add('hidden');
+                        this.playNext();
+                    };
+                    choiceContainer.appendChild(btn);
+                });
+            } else {
+                choiceContainer.classList.add('hidden');
+            }
+        }
+
+        // 执行帧后 Action
+        await this.executeActions(frame.post);
     }
 
     /**
