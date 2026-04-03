@@ -214,3 +214,21 @@ Plugin: // 插件定义。插件应当是剧情无关的独立系统（如手机
 
 左侧可以切换所有角色，点击角色后左侧显示二级菜单，显示角色的所有事件，点击事件可以进行编辑（右侧菜单），中间的空间渲染整个剧情的DAG图，当出现环的时候，用红色线条标记
 
+
+4. 可映射UI函数开发
+
+标准：可映射函数必须写好以下注释，最后由脚本统一扫描生成meta文件给UI渲染
+
+/**
+#DEFINE_UI_FUNCTION
+@description 判定A对B的好感是否大于n
+@type judge|action
+@module Character 角色模块
+@param source 源角色 | unit:el-select
+@param target 目标角色 | unit:el-select
+@param n 数值 | unit:el-input-number | controls:false
+@returns boolean
+#END_DEFINE_UI_FUNCTION
+ */
+function favorGT(source: CharacterId, target: CharacterId, n: number): boolean {
+}
