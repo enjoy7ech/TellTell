@@ -1,0 +1,176 @@
+{
+  "graph": {
+    "last_node_id": 1,
+    "last_link_id": 0,
+    "nodes": [
+      {
+        "id": 1,
+        "type": "TellTell/StoryNode",
+        "pos": {
+          "0": 224,
+          "1": 245,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "size": [
+          240,
+          110
+        ],
+        "flags": {},
+        "order": 0,
+        "mode": 0,
+        "inputs": [
+          {
+            "name": "In",
+            "type": -1,
+            "link": null
+          }
+        ],
+        "outputs": [
+          {
+            "name": "Next",
+            "type": -1,
+            "links": null
+          }
+        ],
+        "title": "Story Node",
+        "properties": {
+          "id": "node_7ae5oo",
+          "repeatable": false,
+          "priority": 0,
+          "folder": "Root",
+          "display": [
+            {
+              "screen": {
+                "pic": "bg_cafe_day",
+                "text": "3年了"
+              },
+              "dialog": {
+                "char": "aoi",
+                "portrait": "normal",
+                "text": "回来啦"
+              },
+              "choice": [
+                {
+                  "text": "交往",
+                  "target": "",
+                  "requirement": [
+                    {
+                      "module": "Requirement",
+                      "func": "favorGT",
+                      "params": [
+                        "aoi",
+                        "protagonist",
+                        20
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "transition": "fade",
+              "pre": [],
+              "post": []
+            }
+          ],
+          "triggers": [],
+          "mount": [],
+          "unMount": []
+        }
+      }
+    ],
+    "links": [],
+    "groups": [],
+    "config": {},
+    "extra": {},
+    "version": 0.4
+  },
+  "characterProfiles": {
+    "aoi": {
+      "id": "aoi",
+      "name": "葵",
+      "favor": {
+        "auntie": 10,
+        "haruno": 20
+      },
+      "isProtagonist": false,
+      "height": 165,
+      "age": 27,
+      "birthDate": "01-09",
+      "info": [
+        {
+          "text": "新公开传记条目...",
+          "lock": true,
+          "unlockRequirement": []
+        }
+      ],
+      "weight": 48,
+      "bloodType": "O"
+    },
+    "auntie": {
+      "id": "auntie",
+      "name": "AUNTIE",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    },
+    "haruno": {
+      "id": "haruno",
+      "name": "HARUNO",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    },
+    "kaisheng": {
+      "id": "kaisheng",
+      "name": "盛",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    },
+    "mrlin": {
+      "id": "mrlin",
+      "name": "马琳",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    },
+    "protagonist": {
+      "id": "protagonist",
+      "name": "野",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    },
+    "yuki": {
+      "id": "yuki",
+      "name": "由纪",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    }
+  }
+}

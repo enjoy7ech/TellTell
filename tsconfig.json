@@ -17,7 +17,13 @@
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@telltell/core": ["./packages/core/index.ts"],
+      "@telltell/plugin-mobile": ["./packages/plugin-mobile/index.ts"],
+      "@telltell/editor": ["./packages/editor/src/main.ts"],
+      "@telltell/demo": ["./packages/demo/main.ts"]
+    }
   },
-  "include": ["core", "plugins", "main.ts"]
+  "include": ["packages/**/*"]
 }

@@ -1,0 +1,109 @@
+{
+  "nodes": [
+    {
+      "id": "node_7ae5oo",
+      "repeatable": false,
+      "priority": 0,
+      "display": [
+        {
+          "screen": {
+            "pic": "bg_cafe_day",
+            "text": "3年了"
+          },
+          "dialog": {
+            "char": "aoi",
+            "text": "回来啦",
+            "pic": "normal"
+          }
+        }
+      ],
+      "triggers": [],
+      "mount": [],
+      "unMount": [],
+      "postNodes": []
+    }
+  ],
+  "characters": [
+    {
+      "id": "aoi",
+      "name": "葵",
+      "favor": {
+        "auntie": 10,
+        "haruno": 20
+      },
+      "isProtagonist": false,
+      "height": 165,
+      "age": 27,
+      "birthDate": "01-09",
+      "info": [
+        {
+          "text": "新公开传记条目...",
+          "lock": true,
+          "unlockRequirement": []
+        }
+      ],
+      "weight": 48,
+      "bloodType": "O"
+    },
+    {
+      "id": "auntie",
+      "name": "AUNTIE",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    },
+    {
+      "id": "haruno",
+      "name": "HARUNO",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    },
+    {
+      "id": "kaisheng",
+      "name": "盛",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    },
+    {
+      "id": "mrlin",
+      "name": "马琳",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    },
+    {
+      "id": "protagonist",
+      "name": "野",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    },
+    {
+      "id": "yuki",
+      "name": "由纪",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "age": 18,
+      "birthDate": "01-01",
+      "info": []
+    }
+  ]
+}

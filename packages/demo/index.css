@@ -1,0 +1,13 @@
+/* 
+  Global Styles for TellTell Demo Shell.
+  The specific layout (flat, modern etc.) is loaded dynamically 
+  from packages/layout/[id]/style.css.
+*/
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #000;
+    overflow: hidden;
+    user-select: none;
+}

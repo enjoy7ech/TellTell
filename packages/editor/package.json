@@ -1,0 +1,22 @@
+{
+  "name": "@telltell/editor",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@popperjs/core": "^2.11.8",
+    "@telltell/core": "workspace:*",
+    "element-plus": "^2.13.6",
+    "litegraph.js": "^0.7.18",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.5",
+    "vite": "^8.0.1"
+  }
+}

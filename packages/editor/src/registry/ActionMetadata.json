@@ -1,0 +1,67 @@
+{
+  "Requirement": {
+    "label": "触发判定",
+    "funcs": {
+      "favorGT": {
+        "label": "判定角色 A 对角色 B 的好感度是否大于 n",
+        "params": [
+          {
+            "name": "charA",
+            "label": "源角色",
+            "type": "char"
+          },
+          {
+            "name": "charB",
+            "label": "目标角色",
+            "type": "char"
+          },
+          {
+            "name": "n",
+            "label": "数值",
+            "type": "number"
+          }
+        ]
+      },
+      "favorLT": {
+        "label": "判定角色 A 对角色 B 的好感度是否小于 n",
+        "params": [
+          {
+            "name": "charA",
+            "label": "源角色",
+            "type": "char"
+          },
+          {
+            "name": "charB",
+            "label": "目标角色",
+            "type": "char"
+          },
+          {
+            "name": "n",
+            "label": "数值",
+            "type": "number"
+          }
+        ]
+      },
+      "timeGT": {
+        "label": "判定游戏当前时间戳是否大于 T (毫秒)",
+        "params": [
+          {
+            "name": "T",
+            "label": "目标时间戳 (ms)",
+            "type": "text"
+          }
+        ]
+      },
+      "timeLT": {
+        "label": "判定游戏当前时间戳是否小于 T (毫秒)",
+        "params": [
+          {
+            "name": "T",
+            "label": "目标时间戳 (ms)",
+            "type": "text"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,12 +1,16 @@
 {
-  "name": "telltell",
+  "name": "telltell-monorepo",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "dev:editor": "pnpm --filter @telltell/editor run dev",
+    "dev:demo": "pnpm --filter @telltell/demo run dev",
+    "build": "pnpm run build -r",
+    "telltell": "tsx ./packages/cli/src/index.ts"
   },
   "devDependencies": {
     "typescript": "~5.9.3",

@@ -1,0 +1,65 @@
+<!-- Loading Overlay -->
+<div class="loading-screen" id="loadingScreen">
+    <div class="loader"></div>
+    <p style="margin-top: 1rem; letter-spacing: 0.1em; color: rgba(255,255,255,0.4); text-transform: uppercase;">
+        Initializing Story Engine...</p>
+</div>
+
+<!-- Background Layer -->
+<div class="game-bg"></div>
+<div class="bg-overlay"></div>
+
+<!-- Menu Control Container -->
+<main class="menu-container">
+    <header>
+        <h1 class="game-title">TellTell</h1>
+        <p class="game-subtitle">Interactive Story Driven Engine</p>
+    </header>
+
+    <ul class="menu-list">
+        <li class="menu-item" id="btn-start">
+            开始新篇章
+            <span>New Narrative</span>
+        </li>
+        <li class="menu-item" id="btn-load">
+            继续昨日故事
+            <span>Load Memory</span>
+        </li>
+        <li class="menu-item" id="btn-settings">
+            感知调优
+            <span>Settings</span>
+        </li>
+        <li class="menu-item" id="btn-exit">
+            离开模拟
+            <span>Exit Term</span>
+        </li>
+    </ul>
+</main>
+
+<!-- In-Game UI Layer (Hidden by default) -->
+<div id="gameLayer" class="game-layer hidden">
+    <div id="gameBackground" class="game-bg-layer"></div>
+
+    <!-- Character Portait Overlay -->
+    <div class="character-container">
+        <img id="charPortrait" class="char-portrait" src="" alt="">
+    </div>
+
+    <!-- Dialogue System -->
+    <div class="dialogue-system" id="dialogueBox">
+        <div class="dialogue-box">
+            <div class="dialogue-name" id="charName">...</div>
+            <div class="dialogue-content" id="dialogueText">
+                这是一个充满未知的起点。按下任意键或点击开始。
+            </div>
+            <div class="dialogue-next-arrow"></div>
+        </div>
+
+        <!-- Choices Overlay -->
+        <div id="choiceContainer" class="choice-container hidden"></div>
+    </div>
+</div>
+
+<footer class="version-info">
+    VER 1.0.2 / BUILD 2026-04-02 / ENJOY7ECH.TELLTELL
+</footer>

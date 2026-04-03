@@ -1,0 +1,166 @@
+{
+  "Character": {
+    "label": "角色状态",
+    "funcs": {
+      "addFavor": {
+        "label": "增加/修改角色间的数值型好感度",
+        "type": "action",
+        "params": [
+          {
+            "name": "fromId",
+            "label": "来源角色",
+            "type": "CharacterSelector",
+            "props": {}
+          },
+          {
+            "name": "toId",
+            "label": "目标角色",
+            "type": "CharacterSelector",
+            "props": {}
+          },
+          {
+            "name": "amount",
+            "label": "变更数量",
+            "type": "el-input-number",
+            "props": {
+              "controls": false
+            }
+          }
+        ]
+      },
+      "favorGT": {
+        "label": "判定角色 A 对角色 B 的好感度是否大于 n",
+        "type": "judge",
+        "params": [
+          {
+            "name": "charA",
+            "label": "源角色",
+            "type": "CharacterSelector",
+            "props": {}
+          },
+          {
+            "name": "charB",
+            "label": "目标角色",
+            "type": "CharacterSelector",
+            "props": {}
+          },
+          {
+            "name": "n",
+            "label": "数值",
+            "type": "el-input-number",
+            "props": {
+              "controls": false
+            }
+          }
+        ]
+      },
+      "favorLT": {
+        "label": "判定角色 A 对角色 B 的好感度是否小于 n",
+        "type": "judge",
+        "params": [
+          {
+            "name": "charA",
+            "label": "源角色",
+            "type": "CharacterSelector",
+            "props": {}
+          },
+          {
+            "name": "charB",
+            "label": "目标角色",
+            "type": "CharacterSelector",
+            "props": {}
+          },
+          {
+            "name": "n",
+            "label": "数值",
+            "type": "el-input-number",
+            "props": {
+              "controls": false
+            }
+          }
+        ]
+      }
+    }
+  },
+  "DateTime": {
+    "label": "历法系统",
+    "funcs": {
+      "addMinutes": {
+        "label": "增加时间 (分钟)",
+        "type": "action",
+        "params": [
+          {
+            "name": "minutes",
+            "label": "变更分钟数",
+            "type": "el-input-number",
+            "props": {}
+          }
+        ]
+      },
+      "nextDayAt": {
+        "label": "跳转到下一天指定时刻",
+        "type": "action",
+        "params": [
+          {
+            "name": "hour",
+            "label": "小时",
+            "type": "el-input-number",
+            "props": {
+              "min": "0",
+              "max": "23"
+            }
+          },
+          {
+            "name": "minute",
+            "label": "分钟",
+            "type": "el-input-number",
+            "props": {
+              "min": "0",
+              "max": "59"
+            }
+          }
+        ]
+      },
+      "setAbsoluteTime": {
+        "label": "设置绝对时间点 (字符串)",
+        "type": "action",
+        "params": [
+          {
+            "name": "dateStr",
+            "label": "时间字符串 (YYYY-MM-DD HH:mm)",
+            "type": "el-input",
+            "props": {}
+          }
+        ]
+      },
+      "timeGT": {
+        "label": "判定游戏当前时间戳是否大于 T (毫秒)",
+        "type": "judge",
+        "params": [
+          {
+            "name": "T",
+            "label": "目标时间戳",
+            "type": "el-input-number",
+            "props": {
+              "controls": false
+            }
+          }
+        ]
+      },
+      "timeLT": {
+        "label": "判定游戏当前时间戳是否小于 T (毫秒)",
+        "type": "judge",
+        "params": [
+          {
+            "name": "T",
+            "label": "目标时间戳",
+            "type": "el-input-number",
+            "props": {
+              "controls": false
+            }
+          }
+        ]
+      }
+    }
+  }
+}
