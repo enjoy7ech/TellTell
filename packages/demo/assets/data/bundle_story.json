@@ -26,7 +26,7 @@
           "choice": [
             {
               "text": "表白",
-              "target": "人生结束",
+              "target": "",
               "requirement": [],
               "action": [
                 {
@@ -59,7 +59,9 @@
       "triggers": [],
       "mount": [],
       "unMount": [],
-      "postNodes": []
+      "postNodes": [
+        "人生结束"
+      ]
     },
     {
       "id": "表白",
@@ -74,25 +76,15 @@
             "text": "",
             "pic": ""
           },
-          "choice": [
-            {
-              "text": "下一步",
-              "target": "人生结束",
-              "action": [
-                {
-                  "module": "Engine",
-                  "func": "next",
-                  "params": []
-                }
-              ]
-            }
-          ]
+          "choice": []
         }
       ],
       "triggers": [],
       "mount": [],
       "unMount": [],
-      "postNodes": []
+      "postNodes": [
+        "人生结束"
+      ]
     },
     {
       "id": "人生结束",
@@ -107,20 +99,7 @@
             "text": "你来了",
             "pic": "normal.webp"
           },
-          "choice": [
-            {
-              "text": "新选项",
-              "target": "",
-              "requirement": [],
-              "action": [
-                {
-                  "module": "Engine",
-                  "func": "next",
-                  "params": []
-                }
-              ]
-            }
-          ]
+          "choice": []
         }
       ],
       "triggers": [],
@@ -141,7 +120,8 @@
       "birthDate": "01-01",
       "bloodType": "O",
       "info": [],
-      "phoneNumber": ""
+      "phoneNumber": "",
+      "constellation": "摩羯座"
     },
     {
       "id": "auntie",

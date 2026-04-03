@@ -247,7 +247,7 @@ export class ScriptEditorService {
                 postNodes: this.state.edges
                     .filter((e: any) => e.source === n.id)
                     .map((e: any) => {
-                        const target = this.nodes.find((tn: any) => tn.id === e.target);
+                        const target = this.state.nodes.find((tn: any) => tn.id === e.target);
                         if (target) {
                             return (target.data.id || target.id).trim();
                         }
@@ -279,6 +279,14 @@ export class ScriptEditorService {
             await writable.close();
 
             this.state.statusText = "发布成功";
+            import('element-plus').then(({ ElNotification }) => {
+                ElNotification({
+                    title: '发布成功',
+                    message: '剧情资源已同步至 assets/data 目录',
+                    type: 'success',
+                    position: 'bottom-right'
+                });
+            });
         } catch (e) { console.error("Publish failed", e); }
     }
 
