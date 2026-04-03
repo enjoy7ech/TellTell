@@ -81,8 +81,9 @@ DialogState: // 对话
 Choice: // 选项
 {
   text: string; // 选项文本
+  acton: Action[]; // 选项执行的action
   requirement?: TriggerRequirement[]; // 选项触发条件，去requirement.ts中执行调用，返回true则视为满足条件（按钮变为可点击状态）
-  target?: NodeId; // 若需要强行跳转剧情节点的时候，填入选项目标节点ID
+  <!-- target?: NodeId; // 若需要强行跳转剧情节点的时候，填入选项目标节点ID -->
 }
 
 Action: // 动作执行结构，支持异步(async/await)。采用try-catch灵活容错，若没有匹配的方法则静默不执行，避免阻断剧情流。
@@ -133,24 +134,25 @@ Character类定义：// 角色类
 CharacterId: string; // 角色ID
 {
   id: CharacterId; // 角色ID
-  name: string; // 角色名称
   picMap: Map<string, string>; // 角色立绘ID -> 图片ID，默认去 assets/character/{CharacterId}/portrait/{picId}.webp 下加载webp，如aio/laugh
   audioMap: Map<string, string>; // 角色音频ID -> 音频ID，默认去 assets/character/{CharacterId}/audio/{audioId}.mp3 下加载mp3
   isProtagonist?: boolean; // 是否为主角，默认false
   favor: Map<CharacterId, number>; // 对CharacterId角色的好感度Map
-  phoneNumber?: string; // 角色电话号码
+  knowledge: Map<string, {name: boolean, phoneNumber:boolean, height:boolean, weight:boolean, age:boolean, bloodType:boolean, birthDate:boolean, constellation:boolean， info: boolean[]}>; // 此角色对其他角色的知识
+
+
   
+  name: string; // 角色名称
+  phoneNumber?: string; // 角色电话号码
   height: number; // 角色身高
   weight: number; // 角色体重
   age: number; // 角色年龄
   bloodType: string; // 角色血型
   birthDate: string; // 角色生日
   constellation: string; // 角色星座
-  
 
   info: {
       text: string; // 信息文本
-      lock: boolean; // 是否锁定，锁定不可见显示？？
       unlockRequirement: TriggerRequirement[]; // 解锁条件，去requirement.ts中执行调用，返回true则视为满足条件
   }[]
   load(): void; // 从json中加载角色信息

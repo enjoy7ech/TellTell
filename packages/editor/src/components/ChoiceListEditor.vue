@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ActionListEditor from './ActionListEditor.vue';
+import { Delete, Plus } from '@element-plus/icons-vue';
 
 const props = defineProps<{
     modelValue: any[];
@@ -8,14 +9,21 @@ const props = defineProps<{
     characterIds: string[];
     characterProfiles: Map<string, any>;
     portraitHandles: Map<string, Map<string, any>>;
-    getImageUrl: (handle: any) => Promise<string>;
+    portraitUrls: Map<string, string>;
 }>();
 
 const emit = defineEmits(['update:modelValue']);
 
 function addChoice() {
     const newList = [...(props.modelValue || [])];
-    newList.push({ text: "新选项", target: "", requirement: [] });
+    newList.push({ 
+        text: "新选项", 
+        target: "", 
+        requirement: [], 
+        action: [
+            { module: 'Engine', func: 'next', params: [] }
+        ] 
+    });
     emit('update:modelValue', newList);
 }
 
@@ -35,33 +43,36 @@ function updateChoice() {
     <div class="choice-list-editor">
         <div v-for="(choice, idx) in modelValue" :key="idx" class="choice-item">
             <div class="choice-row">
-                <el-input v-model="choice.text" placeholder="选项文字..." style="flex: 2;" @change="updateChoice" />
-                <el-select 
-                    v-model="choice.target" 
-                    placeholder="跳转至节点..." 
-                    style="flex: 1;"
-                    filterable
-                    @change="updateChoice">
-                    <el-option label="-- 无跳转 (顺延) --" value="" />
-                    <el-option v-for="nodeId in nodeIds" :key="nodeId" :label="nodeId" :value="nodeId" />
-                </el-select>
-                <el-button size="small" circle icon="Delete" @click="removeChoice(idx)" type="danger" plain />
+                <el-input v-model="choice.text" placeholder="选项文字..." style="flex: 1.5;" @change="updateChoice" size="small" />
+                <el-button size="small" circle :icon="Delete" @click="removeChoice(idx)" type="danger" plain />
             </div>
-            <!-- Requirements Editing -->
-            <div class="choice-requirement-container">
-                 <ActionListEditor 
-                    title="按钮可用条件" 
+            <!-- Logic Editing -->
+            <div class="choice-logic-container">
+                  <ActionListEditor 
+                    title="选项前置条件" 
                     v-model="choice.requirement" 
-                    :allowed-modules="['Requirement']"
+                    allowed-type="judge"
                     :character-ids="characterIds"
                     :character-profiles="characterProfiles"
                     :portrait-handles="portraitHandles"
-                    :get-image-url="getImageUrl"
+                    :portrait-urls="portraitUrls"
+                    :all-node-ids="nodeIds"
+                    @change="updateChoice"
+                 />
+                 <ActionListEditor 
+                    title="执行动作" 
+                    v-model="choice.action" 
+                    allowed-type="action"
+                    :character-ids="characterIds"
+                    :character-profiles="characterProfiles"
+                    :portrait-handles="portraitHandles"
+                    :portrait-urls="portraitUrls"
+                    :all-node-ids="nodeIds"
                     @change="updateChoice"
                  />
             </div>
         </div>
-        <el-button class="btn-add-choice" @click="addChoice" icon="Plus" type="primary" plain>新增选项 (Choice)</el-button>
+        <el-button class="btn-add-choice" @click="addChoice" :icon="Plus" type="primary" plain>新增选项 (Choice)</el-button>
     </div>
 </template>
 
@@ -69,16 +80,18 @@ function updateChoice() {
 .choice-list-editor {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
 }
 
 .choice-item {
     display: flex;
     flex-direction: column;
-    padding: 8px;
-    background: rgba(0,0,0,0.1);
-    border-radius: 4px;
-    border-left: 2px solid var(--accent-color);
+    padding: 10px 12px;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #3b82f6;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.01);
 }
 
 .choice-row {
@@ -87,27 +100,19 @@ function updateChoice() {
     align-items: center;
 }
 
-.choice-requirement-container {
-    margin-top: 8px;
-    padding-left: 12px;
+.choice-logic-container {
+    padding-top: 8px;
+    border-top: 1px dashed #f1f5f9;
 }
 
 .btn-add-choice {
     width: 100%;
-}
-
-/* Global Element Plus Dark Overrides for this component */
-:deep(.el-input__wrapper), :deep(.el-textarea__inner), :deep(.el-input-number__wrapper) {
-    background-color: #000 !important;
-    box-shadow: 0 0 0 1px #333 inset !important;
-}
-
-:deep(.el-input__inner), :deep(.el-textarea__inner) {
-    color: #fff !important;
+    font-weight: 800 !important;
+    height: 32px !important;
+    font-size: 0.75rem !important;
 }
 
 :deep(.el-select) {
     width: 100%;
 }
 </style>
-

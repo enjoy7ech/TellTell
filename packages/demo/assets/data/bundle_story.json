@@ -1,0 +1,225 @@
+{
+  "nodes": [
+    {
+      "id": "开幕",
+      "display": [
+        {
+          "screen": {
+            "pic": "",
+            "text": "这是个很久之前的故事"
+          },
+          "dialog": {
+            "char": "",
+            "text": "",
+            "pic": ""
+          }
+        },
+        {
+          "screen": {
+            "pic": "",
+            "text": "你的选择"
+          },
+          "dialog": {
+            "text": "",
+            "pic": ""
+          },
+          "choice": [
+            {
+              "text": "表白",
+              "target": "人生结束",
+              "requirement": [],
+              "action": [
+                {
+                  "module": "Engine",
+                  "func": "startStoryNode",
+                  "params": [
+                    "表白"
+                  ]
+                }
+              ]
+            },
+            {
+              "text": "啥也不嘎巴",
+              "target": "",
+              "requirement": [],
+              "action": [
+                {
+                  "module": "Engine",
+                  "func": "next",
+                  "params": []
+                }
+              ]
+            }
+          ],
+          "transition": "fade",
+          "pre": [],
+          "post": []
+        }
+      ],
+      "triggers": [],
+      "mount": [],
+      "unMount": [],
+      "postNodes": []
+    },
+    {
+      "id": "表白",
+      "display": [
+        {
+          "screen": {
+            "pic": "",
+            "text": ""
+          },
+          "dialog": {
+            "char": "",
+            "text": "",
+            "pic": ""
+          },
+          "choice": [
+            {
+              "text": "下一步",
+              "target": "人生结束",
+              "action": [
+                {
+                  "module": "Engine",
+                  "func": "next",
+                  "params": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "triggers": [],
+      "mount": [],
+      "unMount": [],
+      "postNodes": []
+    },
+    {
+      "id": "人生结束",
+      "display": [
+        {
+          "screen": {
+            "pic": "",
+            "text": ""
+          },
+          "dialog": {
+            "char": "mrlin",
+            "text": "你来了",
+            "pic": "normal.webp"
+          },
+          "choice": [
+            {
+              "text": "新选项",
+              "target": "",
+              "requirement": [],
+              "action": [
+                {
+                  "module": "Engine",
+                  "func": "next",
+                  "params": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "triggers": [],
+      "mount": [],
+      "unMount": [],
+      "postNodes": []
+    }
+  ],
+  "characters": [
+    {
+      "id": "aoi",
+      "name": "aoi",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "weight": 50,
+      "age": 18,
+      "birthDate": "01-01",
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
+    },
+    {
+      "id": "auntie",
+      "name": "auntie",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "weight": 50,
+      "age": 18,
+      "birthDate": "01-01",
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
+    },
+    {
+      "id": "haruno",
+      "name": "haruno",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "weight": 50,
+      "age": 18,
+      "birthDate": "01-01",
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
+    },
+    {
+      "id": "kaisheng",
+      "name": "kaisheng",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "weight": 50,
+      "age": 18,
+      "birthDate": "01-01",
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
+    },
+    {
+      "id": "mrlin",
+      "name": "mrlin",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "weight": 50,
+      "age": 18,
+      "birthDate": "01-01",
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
+    },
+    {
+      "id": "protagonist",
+      "name": "protagonist",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "weight": 50,
+      "age": 18,
+      "birthDate": "01-01",
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
+    },
+    {
+      "id": "yuki",
+      "name": "yuki",
+      "favor": {},
+      "isProtagonist": false,
+      "height": 165,
+      "weight": 50,
+      "age": 18,
+      "birthDate": "01-01",
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
+    }
+  ]
+}

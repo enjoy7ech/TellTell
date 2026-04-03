@@ -12,8 +12,8 @@ const showMenu = ref(true);
 const showGameLayer = ref(false);
 
 const frame = reactive({
-    dialog: { char: '...', text: '这是一个充满未知的起点。按下任意键或点击开始。', pic: '' },
-    screen: { pic: '' },
+    dialog: { char: '', name: '', text: '', pic: '' },
+    screen: { pic: '', text: '' },
     choices: [] as any[]
 });
 
@@ -27,12 +27,16 @@ onMounted(() => {
     // 2. 监听帧渲染
     props.engine.on('render', (newFrame: any) => {
         if (newFrame.dialog) {
-            frame.dialog.char = newFrame.dialog.char;
-            frame.dialog.text = newFrame.dialog.text;
-            frame.dialog.pic = newFrame.dialog.pic;
+            frame.dialog.char = newFrame.dialog.char || '';
+            frame.dialog.text = newFrame.dialog.text || '';
+            frame.dialog.pic = newFrame.dialog.pic || '';
+            
+            // 使用引擎方法获取展示名称
+            frame.dialog.name = props.engine.getCharacterName(frame.dialog.char);
         }
         if (newFrame.screen) {
-            frame.screen.pic = newFrame.screen.pic;
+            frame.screen.pic = newFrame.screen.pic || '';
+            frame.screen.text = newFrame.screen.text || '';
         }
         frame.choices = newFrame.choice || [];
     });
@@ -42,28 +46,31 @@ onMounted(() => {
 const startNewNarrative = async () => {
     showMenu.value = false;
     showGameLayer.value = true;
-    await props.engine.playNext();
+    await props.engine.next();
 };
 
 const handleDialogueClick = () => {
     if (frame.choices.length === 0) {
-        props.engine.playNext();
+        props.engine.next();
     }
 };
 
-const handleChoice = (choice: any) => {
-    // 这里可以处理选项逻辑 (如执行 choice.action)
-    frame.choices = []; // 清空选项
-    props.engine.playNext();
+const handleChoice = async (choice: any) => {
+    // 1. 执行选项附带的 Action (可能包含跳转逻辑 Engine.startStoryNode)
+    if (choice.action?.length > 0) {
+        await props.engine.executeActions(choice.action);
+    }
+    
+    frame.choices = [];
 };
 
 const getPortraitUrl = (char: string, pic: string) => {
-    return `/assets/character/${char}/portrait/${pic}.webp`;
+    return `/character/${char}/portrait/${pic}`;
 };
 
 const getBgStyle = () => {
     if (frame.screen.pic) {
-        return { backgroundImage: `url('/assets/scene/${frame.screen.pic}.webp')` };
+        return { backgroundImage: `url('/scene/${frame.screen.pic}')` };
     }
     return { backgroundColor: '#000' };
 };
@@ -113,28 +120,42 @@ const getBgStyle = () => {
         </Transition>
 
         <!-- 4. In-Game Story Layer -->
-        <div v-if="showGameLayer" class="game-layer">
+        <div v-if="showGameLayer" class="game-layer" @click="handleDialogueClick">
             <div class="game-bg-layer" :style="getBgStyle()"></div>
 
-            <!-- Character Portrait -->
-            <div class="character-container">
-                <Transition name="portrait-fade">
-                    <img 
-                        v-if="frame.dialog.pic" 
-                        :key="frame.dialog.pic"
-                        :src="getPortraitUrl(frame.dialog.char, frame.dialog.pic)" 
-                        class="char-portrait" 
-                    />
-                </Transition>
-            </div>
+            <!-- Floating Scene Text (Top Right) -->
+            <Transition name="fade">
+                <div v-if="frame.screen.text" class="floating-scene-label">
+                    <div class="label">
+                        {{ frame.screen.text }}
+                    </div>
+                </div>
+            </Transition>
+
+
 
             <!-- Dialogue System -->
-            <div class="dialogue-system" @click="handleDialogueClick">
-                <div class="dialogue-box">
-                    <div class="dialogue-name">{{ frame.dialog.char }}</div>
+            <div 
+                v-if="frame.dialog.text || frame.dialog.name || frame.choices.length > 0" 
+                class="dialogue-system"
+            >
+                <div class="dialogue-box" v-if="frame.dialog.text">
+                    <div class="dialogue-name" v-if="frame.dialog.name">{{ frame.dialog.name }}</div>
                     <div class="dialogue-content">{{ frame.dialog.text }}</div>
+                    <!-- Character Portrait -->
+                    <div class="character-container">
+                        <Transition name="portrait-fade">
+                            <img 
+                                v-if="frame.dialog.pic" 
+                                :key="frame.dialog.pic"
+                                :src="getPortraitUrl(frame.dialog.char, frame.dialog.pic)" 
+                                class="char-portrait" 
+                            />
+                        </Transition>
+                    </div>
                     <div class="dialogue-next-arrow" v-if="frame.choices.length === 0"></div>
                 </div>
+
 
                 <!-- Choices Overlay -->
                 <div class="choice-container" v-if="frame.choices.length > 0">
@@ -142,6 +163,7 @@ const getBgStyle = () => {
                         v-for="(choice, idx) in frame.choices" 
                         :key="idx" 
                         class="choice-btn" 
+                        :class="{ 'disabled': !props.engine.judgeSatisfy(choice.requirement) }"
                         @click.stop="handleChoice(choice)"
                     >
                         {{ choice.text }}
@@ -169,13 +191,12 @@ const getBgStyle = () => {
 .portrait-fade-enter-active { transition: all 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
 .portrait-fade-enter-from { opacity: 0; transform: translateY(20px) scale(0.95); }
 
-/* 禁用状态 */
-.menu-item.disabled {
-    opacity: 0.3;
+.menu-item.disabled, .choice-btn.disabled {
+    opacity: 0.3 !important;
+    filter: grayscale(1);
     cursor: not-allowed;
-}
-.menu-item.disabled:hover {
-    transform: none;
-    color: var(--text-muted);
+    pointer-events: none;
+    border-color: rgba(255,255,255,0.05) !important;
+    background: rgba(0,0,0,0.4) !important;
 }
 </style>

@@ -2,15 +2,18 @@
 import { ref, nextTick, onUnmounted } from 'vue';
 import { createPopper } from '@popperjs/core';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     modelValue: string;
     characterIds: string[];
     characterProfiles: Map<string, any>;
+    portraitUrls: Map<string, string>;
     portraitHandles: Map<string, Map<string, any>>;
-    getImageUrl: (handle: any) => Promise<string>;
     placeholder?: string;
     disabled?: boolean;
-}>();
+    size?: any;
+}>(), {
+    size: 'small'
+});
 
 const emit = defineEmits(['update:modelValue', 'change']);
 
@@ -32,7 +35,10 @@ async function onMouseEnter(id: string, e: MouseEvent) {
         targetPortraitKey = pMap.has('normal') ? 'normal' : Array.from(pMap.keys())[0];
     }
     
-    const portraitUrl = (targetPortraitKey && pMap) ? await props.getImageUrl(pMap.get(targetPortraitKey)) : '';
+    let portraitUrl = '';
+    if (targetPortraitKey) {
+        portraitUrl = props.portraitUrls.get(`${id}/${targetPortraitKey}`) || '';
+    }
     
     // Check if we already moved away
     if (activeId.value !== id) return;
@@ -94,9 +100,11 @@ function onChange(val: string) {
             @update:model-value="onChange"
             :placeholder="placeholder || '选择角色...'"
             :disabled="disabled"
+            clearable
             filterable
             class="full-width"
             popper-class="character-select-dropdown"
+            :size="size"
         >
             <el-option
                 v-for="id in characterIds"
@@ -115,11 +123,10 @@ function onChange(val: string) {
             </el-option>
         </el-select>
 
-        <!-- Purified Float Preview Card -->
+        <!-- Floating Preview Card (White Style Restoration) -->
         <Teleport to="body">
             <div ref="previewCardRef" class="char-mini-card">
                 <div class="card-inner" v-if="previewData">
-                    <div class="card-background-glow"></div>
                     <div class="card-portrait" v-if="previewData.portrait">
                         <img :src="previewData.portrait" />
                     </div>
@@ -157,6 +164,7 @@ function onChange(val: string) {
     align-items: center;
     width: 100%;
     height: 100%;
+    color: #475569;
 }
 
 .item-id {
@@ -166,22 +174,21 @@ function onChange(val: string) {
 
 .item-name {
     font-size: 0.7rem;
-    color: var(--text-dim);
-    font-weight: 500;
+    color: #94a3b8;
+    font-weight: 800;
 }
 
-/* Float Preview Card - Purified Premium Style */
+/* Float Preview Card - White Style Restoration */
 .char-mini-card {
     position: fixed;
     z-index: 10000;
     pointer-events: none;
-    background: rgba(18, 18, 18, 0.95);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-lg);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
     padding: 16px;
-    box-shadow: var(--shadow-lg);
-    min-width: 240px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.02);
+    min-width: 260px;
     
     display: none;
     opacity: 0;
@@ -201,20 +208,9 @@ function onChange(val: string) {
     position: relative;
 }
 
-.card-background-glow {
-    position: absolute;
-    top: -20px;
-    left: -20px;
-    right: -20px;
-    bottom: -20px;
-    background: radial-gradient(circle at 20% 50%, rgba(52, 152, 219, 0.1), transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-}
-
 .card-portrait {
-    width: 90px;
-    height: 110px;
+    width: 80px;
+    height: 100px;
     position: relative;
     margin-top: -30px;
     margin-left: -10px;
@@ -224,9 +220,9 @@ function onChange(val: string) {
 
 .card-portrait img {
     width: auto;
-    height: 140px;
+    height: 130px;
     object-fit: contain;
-    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
 }
 
 .card-main { 
@@ -242,28 +238,30 @@ function onChange(val: string) {
 
 .name { 
     font-weight: 900; 
-    color: #fff; 
+    color: #1e293b; 
     font-size: 1.1rem; 
     letter-spacing: -0.5px;
 }
 
 .protagonist-badge {
-    background: var(--accent-color);
-    color: #fff;
+    background: #fef3c7;
+    color: #d97706;
     font-size: 0.55rem;
     font-weight: 900;
     padding: 2px 6px;
     border-radius: 4px;
     width: fit-content;
     margin-top: 4px;
+    border: 1px solid #fde68a;
 }
 
 .card-id { 
     font-size: 0.65rem; 
-    color: var(--text-dim); 
+    color: #94a3b8; 
     font-family: 'JetBrains Mono', monospace; 
     margin-bottom: 12px;
     letter-spacing: 0.5px;
+    font-weight: 700;
 }
 
 .card-stats {
@@ -275,23 +273,21 @@ function onChange(val: string) {
 .stat-item {
     display: flex;
     flex-direction: column;
-    padding: 4px 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 6px 10px;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #f1f5f9;
 }
 
 .stat-item .label {
     font-size: 0.55rem;
-    color: var(--text-dim);
-    font-weight: 800;
+    color: #94a3b8;
+    font-weight: 900;
 }
 
 .stat-item .val {
-    font-size: 0.75rem;
-    color: #fff;
-    font-weight: 600;
+    font-size: 0.8rem;
+    color: #334155;
+    font-weight: 800;
 }
 </style>
-
-

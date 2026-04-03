@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch, reactive } from 'vue';
+import { ref, computed, watch } from 'vue';
 import ActionListEditor from './ActionListEditor.vue';
-import CharacterSelector from './CharacterSelector.vue';
-import PortraitSelector from './PortraitSelector.vue';
-import ChoiceListEditor from './ChoiceListEditor.vue';
-import SceneSelector from './SceneSelector.vue';
-
+import FrameEditor from './FrameEditor.vue';
+import { Connection, ArrowRight, ArrowDown, Plus, Delete, Close, Phone, Calendar } from '@element-plus/icons-vue';
 
 const props = defineProps<{
     node: any;
@@ -13,14 +10,30 @@ const props = defineProps<{
     profileId: string;
     characterIds: string[];
     portraitHandles: Map<string, Map<string, any>>;
+    portraitUrls: Map<string, string>;
     sceneHandles: Map<string, any>;
+    sceneUrls: Map<string, string>;
     characterProfiles: Map<string, any>;
-    getImageUrl: (handle: any) => Promise<string>;
     onSave?: () => void;
     allNodeIds?: string[];
+    autoExpandIndex?: number;
 }>();
 
-const emit = defineEmits(['update:modelValue']);
+const expandedFrames = ref<Set<number>>(new Set());
+
+// Respond to canvas click-through -> naturally expand story frame
+watch(() => props.node, (newNode) => {
+    expandedFrames.value.clear();
+    if (newNode && props.autoExpandIndex !== undefined && props.autoExpandIndex >= 0) {
+        expandedFrames.value.add(props.autoExpandIndex);
+    }
+}, { immediate: true });
+
+watch(() => props.autoExpandIndex, (newIdx) => {
+    if (props.node && newIdx !== undefined && newIdx >= 0) {
+        expandedFrames.value.add(newIdx);
+    }
+});
 
 const constellation = computed(() => {
     if (!props.profile?.birthDate) return '未设置';
@@ -30,20 +43,20 @@ const constellation = computed(() => {
     return getConstellation(m, d);
 });
 
+watch(constellation, (newVal) => {
+    if (props.profile && newVal !== props.profile.constellation) {
+        props.profile.constellation = newVal;
+    }
+});
+
 function getConstellation(month: number, day: number): string {
     const constellations = [
-        { name: "摩羯座", m: 1, d: 20 },
-        { name: "水瓶座", m: 2, d: 19 },
-        { name: "双鱼座", m: 3, d: 21 },
-        { name: "白羊座", m: 4, d: 20 },
-        { name: "金牛座", m: 5, d: 21 },
-        { name: "双子座", m: 6, d: 22 },
-        { name: "巨蟹座", m: 7, d: 23 },
-        { name: "狮子座", m: 8, d: 23 },
-        { name: "处女座", m: 9, d: 23 },
-        { name: "天秤座", m: 10, d: 24 },
-        { name: "天蝎座", m: 11, d: 23 },
-        { name: "射手座", m: 12, d: 22 },
+        { name: "摩羯座", m: 1, d: 20 }, { name: "水瓶座", m: 2, d: 19 },
+        { name: "双鱼座", m: 3, d: 21 }, { name: "白羊座", m: 4, d: 20 },
+        { name: "金牛座", m: 5, d: 21 }, { name: "双子座", m: 6, d: 22 },
+        { name: "巨蟹座", m: 7, d: 23 }, { name: "狮子座", m: 8, d: 23 },
+        { name: "处女座", m: 9, d: 23 }, { name: "天秤座", m: 10, d: 24 },
+        { name: "天蝎座", m: 11, d: 23 }, { name: "射手座", m: 12, d: 22 },
         { name: "摩羯座", m: 13, d: 20 }
     ];
     const res = constellations.find(c => (month < c.m) || (month === c.m && day < c.d));
@@ -54,50 +67,34 @@ function handleDataChange() {
     if (props.onSave) props.onSave();
 }
 
-// Sync helper for birthdate
-const tempBirthDate = ref(props.profile?.birthDate || "01-01");
-function syncBirthDate(val: string) {
-    if (!props.profile) return;
-    props.profile.birthDate = val;
-    handleDataChange();
-}
-
-// Asset Preview Cache
-const portraitUrls = reactive(new Map<string, string>());
-const sceneUrls = reactive(new Map<string, string>());
-
-async function preloadPortraits(charId: string) {
-    const pMap = props.portraitHandles.get(charId);
-    if (!pMap) return;
-    for (const [key, handle] of pMap.entries()) {
-        const cacheKey = `${charId}_${key}`;
-        if (!portraitUrls.has(cacheKey)) {
-            portraitUrls.set(cacheKey, await props.getImageUrl(handle));
-        }
-    }
-}
-
-async function preloadScenes() {
-    if (!props.sceneHandles) return;
-    for (const [key, handle] of props.sceneHandles.entries()) {
-        if (!sceneUrls.has(key)) {
-            sceneUrls.set(key, await props.getImageUrl(handle));
-        }
-    }
-}
-
-watch(() => props.sceneHandles, () => preloadScenes(), { immediate: true });
-
 function addDisplayItem() {
-    if (!props.node.properties.display) props.node.properties.display = [];
-    props.node.properties.display.push({
-        screen: { pic: "", text: "" },
-        dialog: { char: props.characterIds[0] || "", portrait: "", text: "请输入剧情文本" },
+    if (!props.node.data.display) props.node.data.display = [];
+    
+    // Inherit from previous frame if exists
+    const lastFrame = props.node.data.display.length > 0 
+        ? props.node.data.display[props.node.data.display.length - 1] 
+        : null;
+
+    props.node.data.display.push({
+        screen: { 
+            pic: lastFrame?.screen?.pic || "", 
+            text: "" 
+        },
+        dialog: { 
+            char: lastFrame?.dialog?.char || props.characterIds[0] || "", 
+            portrait: lastFrame?.dialog?.portrait || "", 
+            text: "" 
+        },
         choice: [],
         transition: "fade",
         pre: [],
         post: []
     });
+
+    // Auto-expand the newly added frame
+    const newIdx = props.node.data.display.length - 1;
+    expandedFrames.value.add(newIdx);
+
     handleDataChange();
 }
 
@@ -106,21 +103,9 @@ function removeDisplayItem(idx: number) {
     handleDataChange();
 }
 
-function addFavor() {
-    if (!props.profile.favor) props.profile.favor = {};
-    const target = props.characterIds.find(id => id !== props.profileId && !props.profile.favor.hasOwnProperty(id)) || 'other';
-    props.profile.favor = { ...props.profile.favor, [target]: 0 };
-    handleDataChange();
-}
-
-function removeFavor(targetId: string) {
-    delete props.profile.favor[targetId];
-    handleDataChange();
-}
-
 function addInfo() {
     if (!props.profile.info) props.profile.info = [];
-    props.profile.info.push({ text: "新公开传记条目...", lock: true, unlockRequirement: [] });
+    props.profile.info.push({ text: "新公开传记条目...", unlockRequirement: [] });
     handleDataChange();
 }
 
@@ -129,148 +114,111 @@ function removeInfo(idx: number) {
     handleDataChange();
 }
 
-function updateFavorTarget(oldId: string, newId: string) {
-    if (newId === oldId) return;
-    const val = props.profile.favor[oldId];
-    const newFavor = { ...props.profile.favor };
-    delete newFavor[oldId];
-    newFavor[newId] = val;
-    props.profile.favor = newFavor;
-    handleDataChange();
-}
+const activePortraitUrl = computed(() => {
+    if (!props.profileId || !props.portraitUrls) return '';
+    
+    // Try to find normal portrait or first available in Map
+    for (const [key, url] of props.portraitUrls.entries()) {
+        if (key.startsWith(`${props.profileId}/`)) {
+            // Priority for 'normal' if exists
+            if (key.includes('normal')) return url;
+        }
+    }
 
-const activePortraitUrl = ref('');
-watch(() => props.profileId, async (newId) => {
-    if (!newId) {
-        activePortraitUrl.value = '';
-        return;
+    // Fallback: first available for this character
+    for (const [key, url] of props.portraitUrls.entries()) {
+        if (key.startsWith(`${props.profileId}/`)) return url;
     }
-    const pMap = props.portraitHandles.get(newId);
-    if (pMap) {
-        const target = pMap.get('normal') || Array.from(pMap.values())[0];
-        activePortraitUrl.value = target ? await props.getImageUrl(target) : '';
+    return '';
+});
+
+function toggleFrameExpand(idx: number) {
+    if (expandedFrames.value.has(idx)) {
+        expandedFrames.value.delete(idx);
     } else {
-        activePortraitUrl.value = '';
+        expandedFrames.value.add(idx);
     }
-}, { immediate: true });
+}
+const isIdEmpty = computed(() => !props.node?.data.id?.trim());
+const isIdConflict = computed(() => {
+    if (!props.node || !props.allNodeIds) return false;
+    return props.allNodeIds.filter(id => id === props.node.data.id).length > 1;
+});
 </script>
 
 <template>
     <div class="vue-property-editor" @input="handleDataChange" @change="handleDataChange">
         <!-- Node Context -->
-        <div v-if="node" class="node-editor-content">
-            <h3 class="node-title">剧情节点: {{ node.properties.id }}</h3>
+        <div v-if="node" class="node-editor-content" :key="node.id">
+            <h3 class="node-title">剧情节点: {{ node.data.id || '(待命名)' }}</h3>
             
             <div class="prop-group">
-                <div class="label-row">节点 ID</div>
-                <el-input v-model="node.properties.id" placeholder="Node ID" />
+                <div class="label-row" :class="{ 'error-text': isIdConflict || isIdEmpty }">
+                    节点 ID 
+                    <span v-if="isIdEmpty" class="error-msg">(必填)</span>
+                    <span v-else-if="isIdConflict" class="error-msg">(重复 ID)</span>
+                </div>
+                <el-input 
+                    v-model="node.data.id" 
+                    placeholder="输入唯一标识 ID..." 
+                    :class="{ 'error-input': isIdConflict || isIdEmpty }"
+                    size="small"
+                />
             </div>
 
             <div class="prop-group-row">
                  <div class="check-row">
-                    <el-checkbox v-model="node.properties.repeatable" label="可重复触发" />
+                    <el-checkbox v-model="node.data.repeatable" label="可重复触发" />
                 </div>
                 <div class="prop-group">
                     <div class="label-row">优先级</div>
-                    <el-input-number v-model="node.properties.priority" :min="0" :controls="false" style="width: 100%;" />
+                    <el-input-number v-model="node.data.priority" :min="0" :controls="false" style="width: 100%;" size="small" />
                 </div>
             </div>
 
             <div class="display-items">
                 <el-divider content-position="left" class="custom-divider">分镜序列 (STORY FRAMES)</el-divider>
                 
-                <div v-for="(item, idx) in node.properties.display" :key="idx" class="display-item-card">
-                    <div class="item-header">
-                        <span class="idx-label">Frame #{{ Number(idx) + 1 }}</span>
-                        <el-button size="small" circle icon="Close" @click="removeDisplayItem(Number(idx))" />
+                <div v-for="(item, idx) in node.data.display" :key="idx" class="display-item-card" :class="{ collapsed: !expandedFrames.has(Number(idx)) }">
+                    <div class="item-header" @click="toggleFrameExpand(Number(idx))">
+                        <div class="header-left">
+                            <el-icon class="collapse-arrow"><ArrowRight v-if="!expandedFrames.has(Number(idx))" /><ArrowDown v-else /></el-icon>
+                            <span class="idx-label">Frame #{{ Number(idx) + 1 }}</span>
+                            <span v-if="!expandedFrames.has(Number(idx))" class="collapsed-summary">
+                                {{ item.dialog.text?.substring(0, 20) }}{{ (item.dialog.text?.length || 0) > 20 ? '...' : '' }}
+                            </span>
+                        </div>
+                        <el-button size="small" circle :icon="Close" @click.stop="removeDisplayItem(Number(idx))" />
                     </div>
                     
-                    <div class="sub-group">
-                        <div class="label-row">立绘/表情</div>
-                        <div class="custom-select-wrapper">
-                            <CharacterSelector 
-                                v-model="item.dialog.char"
-                                :character-ids="characterIds"
-                                :character-profiles="characterProfiles"
-                                :portrait-handles="portraitHandles"
-                                :get-image-url="getImageUrl"
-                                @change="preloadPortraits(item.dialog.char)"
-                            />
-                            <PortraitSelector 
-                                v-model="item.dialog.portrait"
-                                :char-id="item.dialog.char"
-                                :portrait-urls="portraitUrls"
-                                :portrait-handles="portraitHandles"
-                                placeholder="表情立绘"
-                                @visible-change="(v: boolean) => v && preloadPortraits(item.dialog.char)"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="prop-group" style="margin-top: 12px;">
-                        <div class="label-row">对话文本</div>
-                        <el-input v-model="item.dialog.text" type="textarea" :rows="3" placeholder="请输入剧情文本" />
-                    </div>
-
-                    <div class="prop-group-row" style="margin-top: 8px;">
-                        <div class="prop-group">
-                            <div class="label-row">背景图片 & 悬浮文本</div>
-                            <SceneSelector 
-                                v-model="item.screen.pic" 
-                                :scene-urls="sceneUrls"
-                                :scene-handles="sceneHandles"
-                                placeholder="选择背景图..."
-                                style="margin-bottom: 4px;"
-                                @update:model-value="handleDataChange"
-                            />
-                            <el-input v-model="item.screen.text" placeholder="场景右侧悬浮标语..." @change="handleDataChange" />
-                        </div>
-                        <div class="prop-group">
-                            <div class="label-row">过场效果</div>
-                            <el-select v-model="item.transition" placeholder="效果">
-                                <el-option label="渐变 (Fade)" value="fade" />
-                                <el-option label="闪烁 (Flash)" value="flash" />
-                                <el-option label="切入 (None)" value="" />
-                            </el-select>
-                        </div>
-                    </div>
-
-                    <div class="frame-logic-group">
-                        <div class="tiny-title">分镜互动选项 (CHOICES)</div>
-                        <ChoiceListEditor 
-                            v-model="item.choice" 
-                            :node-ids="allNodeIds || []"
+                    <div v-if="expandedFrames.has(Number(idx))" class="item-body-animate">
+                        <FrameEditor 
+                            v-model="node.data.display[idx]"
                             :character-ids="characterIds"
                             :character-profiles="characterProfiles"
                             :portrait-handles="portraitHandles"
-                            :get-image-url="getImageUrl"
+                            :portrait-urls="portraitUrls"
+                            :scene-handles="sceneHandles"
+                            :scene-urls="sceneUrls"
+                            :node-ids="allNodeIds || []"
+                            @change="handleDataChange"
                         />
                     </div>
-
-                    <div class="frame-logic-group">
-                         <ActionListEditor title="进入分镜前 (PRE)" v-model="item.pre" :allowed-modules="['Character', 'Engine']" :character-ids="characterIds" :character-profiles="characterProfiles" :portrait-handles="portraitHandles" :get-image-url="getImageUrl" />
-                         <ActionListEditor title="离开分镜后 (POST)" v-model="item.post" :allowed-modules="['Character', 'Engine']" :character-ids="characterIds" :character-profiles="characterProfiles" :portrait-handles="portraitHandles" :get-image-url="getImageUrl" />
-                    </div>
                 </div>
-                <el-button class="btn-add-frame" @click="addDisplayItem" icon="Plus" style="width: 100%; margin-top: 5px;">新增分镜</el-button>
+                <el-button class="btn-add-frame" @click="addDisplayItem" :icon="Plus" style="width: 100%; margin-top: 5px;">新增分镜</el-button>
             </div>
 
             <div class="logic-sections">
                 <el-divider content-position="left" class="custom-divider">流程控制 (FLOW CONTROL)</el-divider>
                 <div class="action-grid-vertical">
-                    <ActionListEditor title="触发条件 (TRIGGERS)" v-model="node.properties.triggers" :allowed-modules="['Requirement']" :character-ids="characterIds" :character-profiles="characterProfiles" :portrait-handles="portraitHandles" :get-image-url="getImageUrl" />
-                    <ActionListEditor title="激活时动作 (ON MOUNT)" v-model="node.properties.mount" :allowed-modules="['Character', 'Engine']" :character-ids="characterIds" :character-profiles="characterProfiles" :portrait-handles="portraitHandles" :get-image-url="getImageUrl" />
-                    <ActionListEditor title="销毁时动作 (ON UNMOUNT)" v-model="node.properties.unMount" :allowed-modules="['Character', 'Engine']" :character-ids="characterIds" :character-profiles="characterProfiles" :portrait-handles="portraitHandles" :get-image-url="getImageUrl" />
+                    <ActionListEditor title="触发条件 (TRIGGERS)" v-model="node.data.triggers" allowed-type="judge" :character-ids="characterIds" :character-profiles="characterProfiles" :portrait-handles="portraitHandles" :portrait-urls="portraitUrls" />
+                    <ActionListEditor title="激活时动作 (ON MOUNT)" v-model="node.data.mount" allowed-type="action" :character-ids="characterIds" :character-profiles="characterProfiles" :portrait-handles="portraitHandles" :portrait-urls="portraitUrls" />
+                    <ActionListEditor title="销毁时动作 (ON UNMOUNT)" v-model="node.data.unMount" allowed-type="action" :character-ids="characterIds" :character-profiles="characterProfiles" :portrait-handles="portraitHandles" :portrait-urls="portraitUrls" />
                 </div>
-            </div>
-            
-            <div class="prop-group" style="margin-top: 20px;">
-                <div class="label-row">所属目录</div>
-                <el-input v-model="node.properties.folder" />
             </div>
         </div>
 
-        <!-- Profile Context -->
+        <!-- Profile Editor -->
         <div v-else-if="profile" class="profile-editor-content" :key="profileId">
             <div class="profile-header-visual">
                 <div class="portrait-main">
@@ -279,303 +227,255 @@ watch(() => props.profileId, async (newId) => {
                 </div>
                 <div class="header-text">
                     <h3 class="node-title">{{ profileId }} 角色全档案</h3>
-                    <p class="profile-summary">核心设定: {{ profile.name || profileId }}</p>
+                    <div class="p-status">
+                         <el-tag v-if="profile.isProtagonist" type="warning" size="small">主角 / PROTAGONIST</el-tag>
+                    </div>
                 </div>
+            </div>
+
+            <el-divider content-position="left" class="custom-divider">身份信息</el-divider>
+            <div class="prop-group">
+                <div class="label-row">显示姓名</div>
+                <el-input v-model="profile.name" size="small" />
+            </div>
+            <div class="prop-group">
+                <div class="label-row"><el-icon><Phone /></el-icon> 电话号码</div>
+                <el-input v-model="profile.phoneNumber" placeholder="尚未登记..." size="small" />
             </div>
             
-            <div class="prop-group">
-                <div class="label-row">核心 ID (Immutable)</div>
-                <el-input :value="profileId" disabled />
-            </div>
-
-            <div class="prop-group-row" style="margin: 12px 0;">
-                <div class="prop-group">
-                    <div class="label-row">显示姓名</div>
-                    <el-input v-model="profile.name" />
-                </div>
-                <div class="check-row">
-                    <el-checkbox v-model="profile.isProtagonist" label="主角地位" />
-                </div>
-            </div>
-
+            <el-divider content-position="left" class="custom-divider">身体素质 & 星盘</el-divider>
             <div class="stats-grid">
-                <div class="prop-group"><div class="label-row">年龄</div><el-input-number v-model="profile.age" :controls="false" style="width: 100%;" /></div>
-                <div class="prop-group"><div class="label-row">身高</div><el-input-number v-model="profile.height" :controls="false" style="width: 100%;" /></div>
-                <div class="prop-group"><div class="label-row">体重</div><el-input-number v-model="profile.weight" :controls="false" style="width: 100%;" /></div>
-                <div class="prop-group"><div class="label-row">血型</div><el-input v-model="profile.bloodType" /></div>
-            </div>
-
-            <div class="prop-group-row" style="margin-top: 12px;">
                 <div class="prop-group">
-                    <div class="label-row">生日</div>
-                    <el-date-picker v-model="tempBirthDate" type="date" format="MM-DD" value-format="MM-DD" style="width: 100%;" @change="syncBirthDate" />
+                    <div class="label-row">身高 (cm)</div>
+                    <el-input-number v-model="profile.height" :min="0" :controls="false" style="width: 100%;" size="small" />
                 </div>
                 <div class="prop-group">
-                    <div class="label-row">星座</div>
-                    <el-input :value="constellation" disabled />
+                    <div class="label-row">体重 (kg)</div>
+                    <el-input-number v-model="profile.weight" :min="0" :controls="false" style="width: 100%;" size="small" />
+                </div>
+                <div class="prop-group">
+                    <div class="label-row">年龄</div>
+                    <el-input-number v-model="profile.age" :min="0" :controls="false" style="width: 100%;" size="small" />
+                </div>
+                <div class="prop-group">
+                    <div class="label-row">血型</div>
+                    <el-select v-model="profile.bloodType" placeholder="选择..." size="small">
+                        <el-option label="A" value="A" />
+                        <el-option label="B" value="B" />
+                        <el-option label="AB" value="AB" />
+                        <el-option label="O" value="O" />
+                        <el-option label="Other" value="Other" />
+                    </el-select>
                 </div>
             </div>
 
-            <el-divider content-position="left" class="custom-divider">角色关系 (FAVOR MAP)</el-divider>
-            <div class="favor-section">
-                <div v-for="(_fval, tid) in profile.favor" :key="tid" class="favor-row">
-                    <CharacterSelector 
-                        class="favor-target-sel"
-                        :model-value="String(tid)" 
-                        @update:model-value="updateFavorTarget(String(tid), $event)"
-                        :character-ids="characterIds"
-                        :character-profiles="characterProfiles"
-                        :portrait-handles="portraitHandles"
-                        :get-image-url="getImageUrl"
-                    />
-                    <el-input-number v-model="profile.favor[tid]" :min="0" :controls="false" class="favor-input" />
-                    <el-button size="small" circle icon="Delete" @click="removeFavor(String(tid))" type="danger" plain />
+            <div class="date-row">
+                 <div class="prop-group">
+                    <div class="label-row"><el-icon><Calendar /></el-icon> 生日 (MM-DD)</div>
+                    <el-input v-model="profile.birthDate" placeholder="01-01" size="small" />
                 </div>
-                <el-button size="small" @click="addFavor" icon="Plus" type="primary" plain style="width: 100%; margin-top: 8px;">添加角色关系</el-button>
+                <div class="prop-group">
+                    <div class="label-row">对应星座</div>
+                    <el-input :value="constellation" disabled size="small" />
+                </div>
             </div>
 
-            <el-divider content-position="left" class="custom-divider">传记情报 (BIOGRAPHY)</el-divider>
-            <div class="info-section">
-                <div v-for="(fact, idx) in profile.info" :key="idx" class="info-card">
-                    <div class="card-header">
-                        <el-checkbox v-model="fact.lock" label="默认锁定" />
-                        <el-button size="small" circle icon="Delete" @click="removeInfo(Number(idx))" type="danger" plain />
-                    </div>
-                    <el-input v-model="fact.text" type="textarea" :rows="2" placeholder="输入传记内容..." style="margin-bottom: 8px;" />
-                    <ActionListEditor 
-                        title="解锁条件 (UNLOCK REQUIREMENTS)" 
-                        v-model="fact.unlockRequirement" 
-                        :character-ids="characterIds"
-                        :character-profiles="characterProfiles"
-                        :portrait-handles="portraitHandles"
-                        :get-image-url="getImageUrl"
-                    />
-                </div>
-                <el-button size="small" @click="addInfo" icon="Plus" type="primary" plain style="width: 100%; margin-top: 8px;">新增传记条目</el-button>
+            <el-divider content-position="left" class="custom-divider">传记详情 / 档案条目</el-divider>
+            <div class="info-list">
+                 <div v-for="(fact, idx) in profile.info" :key="idx" class="info-card">
+                     <div class="card-top">
+                        <span class="idx">INDEX #{{ (idx as number) + 1 }}</span>
+                        <el-button size="small" link :icon="Delete" @click="removeInfo(idx as number)" />
+                     </div>
+                     <el-input v-model="fact.text" type="textarea" :rows="3" placeholder="填写情报文本..." size="small" />
+                     
+                     <div class="unlock-logic">
+                        <ActionListEditor 
+                            title="自动解锁条件 (REQ)" 
+                            v-model="fact.unlockRequirement" 
+                            allowed-type="judge"
+                            :character-ids="characterIds"
+                            :character-profiles="characterProfiles"
+                            :portrait-handles="portraitHandles"
+                            :portrait-urls="portraitUrls"
+                        />
+                     </div>
+                 </div>
+                 <el-button class="btn-add-info" @click="addInfo" :icon="Plus">新增传记条目</el-button>
             </div>
         </div>
 
         <div v-else class="empty-state">
-            请在左侧选择一个节点或角色进行编辑
+            <el-icon class="empty-icon"><Connection /></el-icon>
+            <p>未选择任何节点</p>
         </div>
     </div>
 </template>
 
 <style scoped>
 .vue-property-editor {
-    padding: 20px;
+    padding: 16px;
     color: var(--text-main);
     font-family: 'Inter', sans-serif;
     height: 100%;
     overflow-y: auto;
 }
 
-.node-title {
-    font-size: 1.25rem;
-    font-weight: 900;
-    margin-bottom: 30px;
-    color: var(--accent-color);
-    border-left: 4px solid var(--accent-color);
-    padding-left: 16px;
-    letter-spacing: -0.5px;
-}
-
-.custom-divider {
-    margin: 32px 0 20px 0;
-}
-
-:deep(.el-divider__text) {
-    background-color: transparent !important;
-    color: var(--text-dim) !important;
-    font-size: 0.65rem !important;
-    font-weight: 900 !important;
-    letter-spacing: 1.5px;
-}
-
-:deep(.el-divider--horizontal) {
-    border-top: 1px solid var(--border-color) !important;
-}
-
-.prop-group { margin-bottom: 12px; }
-.label-row {
-    font-size: 0.65rem;
+.empty-state {
+    height: 80%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     color: var(--text-dim);
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    font-weight: 800;
-    letter-spacing: 0.5px;
+    gap: 8px;
 }
 
-.prop-group-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+.empty-icon {
+    font-size: 2.5rem;
+    color: rgba(255,255,255,0.03);
+    margin-bottom: 12px;
 }
+
+.node-title {
+    font-size: 1rem;
+    font-weight: 850;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 8px;
+    letter-spacing: -0.3px;
+}
+
+.p-status { margin-left: 0; margin-top: -5px; margin-bottom: 12px; }
+
+.profile-header-visual {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.portrait-main {
+    width: 60px;
+    height: 100px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-radius: 6px;
+}
+
+.portrait-main img {
+    width: 100%;
+    object-fit: cover;
+}
+
+.portrait-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #333;
+    background: #eee;
+}
+
+.custom-divider { margin: 20px 0 12px 0; }
 
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
-.check-row {
+.date-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 12px;
+}
+
+.label-row {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    font-weight: 850;
     display: flex;
     align-items: center;
-    height: 100%;
+    gap: 4px;
 }
 
-.display-item-card, .info-card {
+.info-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.idx { font-size: 0.55rem; font-weight: 900; color: var(--accent-color); opacity: 0.8; }
+
+.unlock-logic { margin-top: 8px; }
+
+.btn-add-info { width: 100%; border-style: dashed; margin-top: 5px; height: 32px; font-size: 0.8rem; }
+
+.display-items { margin-top: 15px; }
+
+.display-item-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 16px;
-    margin-bottom: 16px;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
     box-shadow: var(--shadow-sm);
-    transition: all 0.2s;
 }
 
-.display-item-card:hover {
-    border-color: var(--border-hover);
-    box-shadow: var(--shadow-md);
+.display-item-card.collapsed {
+    padding: 8px 12px;
 }
 
 .item-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    cursor: pointer;
 }
 
-.idx-label { font-weight: 950; color: #f1c40f; font-size: 0.85rem; letter-spacing: 1px; }
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+}
 
-.custom-select-wrapper {
+.idx-label { font-weight: 950; color: #f1c40f; font-size: 0.75rem; }
+
+.collapsed-summary {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-left: 8px;
+    font-style: italic;
+    opacity: 0.7;
+}
+
+.prop-group-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    align-items: stretch;
-}
-
-.custom-select-wrapper > * {
-    width: 100%;
-}
-
-.frame-logic-group {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border-color);
-}
-
-.tiny-title {
-    font-size: 0.6rem;
-    color: var(--text-dim);
     margin-bottom: 10px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 1px;
 }
 
-.favor-row {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 12px;
-    align-items: center;
-}
+.check-row { display: flex; align-items: center; padding-top: 5px; }
 
-.favor-target-sel { flex: 1; min-width: 0; }
-.favor-input { width: 100px; }
-
-.empty-state {
-    display: flex;
-    height: 100%;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-dim);
-    font-style: italic;
-    font-size: 0.9rem;
-    opacity: 0.5;
-}
-
-/* Profile Visuals */
-.profile-header-visual {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 30px;
-    background: linear-gradient(135deg, rgba(52, 152, 219, 0.15) 0%, transparent 100%);
-    padding: 20px;
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(255,255,255,0.05);
-    position: relative;
-    overflow: hidden;
-}
-
-.profile-header-visual::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 100px;
-    height: 100px;
-    background: radial-gradient(circle at center, rgba(52, 152, 219, 0.1), transparent 70%);
-    pointer-events: none;
-}
-
-.portrait-main {
-    width: 90px;
-    height: 110px;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 10;
-}
-
-.portrait-main img {
-    height: 140%;
-    width: auto;
-    object-fit: contain;
-    position: absolute;
-    bottom: -15px;
-    left: 50%;
-    transform: translateX(-50%);
-    filter: drop-shadow(0 15px 30px rgba(0,0,0,0.8));
-}
-
-.portrait-placeholder {
-    width: 100%;
-    height: 100%;
-    background: #000;
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
-    color: #222;
-    border: 1px solid var(--border-color);
-}
-
-.header-text { flex: 1; }
-.header-text .node-title { margin-bottom: 4px; border: none; padding-left: 0; }
-.profile-summary { font-size: 0.75rem; color: var(--text-dim); margin: 0; font-weight: 500; }
-
-.portrait-opt-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-}
-.opt-preview-mini {
-    width: 28px;
-    height: 28px;
-    overflow: hidden;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-color);
-}
-.opt-preview-mini img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-:deep(.el-select) {
-    width: 100%;
+.btn-add-frame {
+    height: 32px !important;
+    font-size: 0.8rem !important;
 }
 </style>

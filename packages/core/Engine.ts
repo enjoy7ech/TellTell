@@ -8,7 +8,6 @@ import { DateTimeManager } from './DateTime';
  */
 export interface RuntimeNode {
     node: StoryEventNode;
-    inDegree: number;
 }
 
 export interface SaveData {
@@ -23,20 +22,22 @@ export interface EngineConfig {
 
 export class Engine {
     private nodeMap: Map<NodeId, StoryEventNode> = new Map();
+    private inDegreeMap: Map<number, RuntimeNode[]> = new Map();
+    private nodeInDegree: Map<NodeId, number> = new Map();
     private nodes: RuntimeNode[] = [];
     private instances: (ISerializable & { id?: string })[] = [];
     private passedNodes: Set<NodeId> = new Set();
     public activeNodes: RuntimeNode[] = [];
     private initialized: boolean = false;
-    private currentNode: StoryEventNode | null = null;
+    public currentNode: StoryEventNode | null = null;
     private currentFrameIndex: number = -1;
 
     // Event Handling
     private listeners: { [key: string]: Function[] } = {};
 
     constructor(private config: EngineConfig = {}) {
-        this.config.storyUrl = this.config.storyUrl || '/assets/data/bundle_story.json';
-        this.config.configUrl = this.config.configUrl || '/assets/data/gameConfig.json';
+        this.config.storyUrl = this.config.storyUrl || '/data/bundle_story.json';
+        this.config.configUrl = this.config.configUrl || '/data/gameConfig.json';
     }
 
     public async init(): Promise<void> {
@@ -70,6 +71,31 @@ export class Engine {
         }
     }
 
+    /**
+     * Helper: Get character display name from modules (checks for knowledge)
+     */
+    public getCharacterName(charId: string): string {
+        const charMgr = this.getModule('Character');
+        if (!charId) return "";
+        if (charMgr && typeof charMgr.getCharacter === 'function') {
+            const profile = charMgr.getCharacter(charId);
+            const protagonist = charMgr.getProtagonist();
+
+            // 1. If it is the protagonist themselves, they know their name
+            if (profile?.isProtagonist) return profile.name || charId;
+
+            // 2. If it is an NPC, check if the protagonist knows their name
+            if (protagonist?.knowledge) {
+                const kMap = (protagonist.knowledge as any).get ? protagonist.knowledge.get(charId) : (protagonist.knowledge as any)[charId];
+                if (kMap && kMap.name) {
+                    return profile?.name || charId;
+                }
+            }
+            return "?"; // Name unknown
+        }
+        return charId;
+    }
+
     public registerModule(instance: any): void {
         this.instances.push(instance);
         if (typeof (instance as any).bindEngine === 'function') {
@@ -77,41 +103,76 @@ export class Engine {
         }
     }
 
+    public judgeSatisfy(requirements: TriggerRequirement[]): boolean {
+        for (const req of requirements) {
+            const module = this.getModule(req.module);
+            if (module && typeof (module as any)[req.func] === 'function') {
+                if (!(module as any)[req.func](...req.params)) return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+    #DEFINE_UI_FUNCTION
+    @description 启动指定的剧情节点
+    @type action
+    @module Engine 引擎核心
+    @param nodeId 节点ID | unit:StoryNodeSelect
+    @returns Promise<void>
+    #END_DEFINE_UI_FUNCTION
+    */
     public async startStoryNode(nodeId: NodeId): Promise<void> {
-        this.currentNode = this.nodeMap.get(nodeId) || null;
+        if (!this.initialized) await this.init();
+        const cleanId = String(nodeId).trim();
+        this.currentNode = this.nodeMap.get(cleanId) || null;
         this.currentFrameIndex = 0;
+
         if (this.currentNode) {
+            await this.internalStep(this.currentNode.id);
             await this.executeActions(this.currentNode.mount);
-            this.renderCurrentFrame();
+            await this.renderCurrentFrame();
         }
     }
 
-    public async playNext(): Promise<void> {
+    /**
+    #DEFINE_UI_FUNCTION
+    @description 推进至下一段剧情（集合切页与自动跳转）
+    @type action
+    @module Engine 引擎核心
+    @returns Promise<void>
+    #END_DEFINE_UI_FUNCTION
+    */
+    public async next(): Promise<void> {
         if (!this.initialized) await this.init();
-        if (!this.currentNode) {
-            this.updateActiveNodes();
-            if (this.activeNodes.length > 0) {
-                this.currentNode = this.activeNodes[0].node;
-                this.currentFrameIndex = 0;
-                await this.executeActions(this.currentNode.mount);
-            } else { this.emit('end', {}); return; }
-        } else if (this.currentFrameIndex >= this.currentNode.display.length - 1) {
-            const completedId = this.currentNode.id;
-            await this.executeActions(this.currentNode.unMount);
-            await this.step(completedId);
-            if (this.activeNodes.length > 0) {
-                this.currentNode = this.activeNodes[0].node;
-                this.currentFrameIndex = 0;
-                await this.executeActions(this.currentNode.mount);
-            } else {
+
+        // 场景 A：当前没有节点，或者当前节点点到了头 -> 抽取下一个可用节点
+        if (!this.currentNode || this.currentFrameIndex >= this.currentNode.display.length - 1) {
+            if (this.currentNode) {
+                await this.executeActions(this.currentNode.unMount);
                 this.currentNode = null;
                 this.currentFrameIndex = -1;
+            }
+
+            this.updateActiveNodes(); // 刷新就绪池
+
+            if (this.activeNodes.length > 0) {
+                const nextRN = this.activeNodes[0];
+                this.currentNode = nextRN.node;
+                this.currentFrameIndex = 0;
+
+                await this.internalStep(this.currentNode.id); // 到达即满足
+                await this.executeActions(this.currentNode.mount);
+            } else {
                 this.emit('end', {});
                 return;
             }
-        } else {
+        }
+        // 场景 B：还在当前节点内 -> 切分页
+        else {
             this.currentFrameIndex++;
         }
+
         await this.renderCurrentFrame();
     }
 
@@ -119,7 +180,7 @@ export class Engine {
         if (!this.currentNode) return;
         const frame = this.currentNode.display[this.currentFrameIndex];
         if (!frame) return;
-        
+
         await this.executeActions(frame.pre);
         this.emit('render', frame);
         await this.executeActions(frame.post);
@@ -136,42 +197,127 @@ export class Engine {
         }
     }
 
-    // Logic Methods (Build DAG, Actions, Triggers etc.)
     private buildDAG(nodes: StoryEventNode[]): void {
         this.nodeMap.clear();
+        this.inDegreeMap.clear();
+        this.nodeInDegree.clear();
         this.nodes = [];
+        this.passedNodes.clear();
+        this.activeNodes = [];
+        this.currentNode = null;
+        this.currentFrameIndex = -1;
+
+        // 1. First pass: Register all nodes
         nodes.forEach(node => {
-            this.nodeMap.set(node.id, node);
-            this.nodes.push({ node, inDegree: 0 });
+            const cleanId = String(node.id).trim();
+            node.id = cleanId;
+            this.nodeMap.set(cleanId, node);
+            this.nodeInDegree.set(cleanId, 0);
+            this.nodes.push({ node });
         });
+
+        // 2. Second pass: Calculate in-degrees
         nodes.forEach(node => {
             if (node.postNodes) {
                 node.postNodes.forEach(targetId => {
-                    const target = this.nodes.find(n => n.node.id === targetId);
-                    if (target) target.inDegree++;
+                    const cleanTargetId = String(targetId).trim();
+                    const currentDeg = this.nodeInDegree.get(cleanTargetId) || 0;
+                    this.nodeInDegree.set(cleanTargetId, currentDeg + 1);
                 });
             }
         });
+
+        // 3. Populate Buckets
+        this.nodes.forEach(rn => {
+            const deg = this.nodeInDegree.get(rn.node.id) || 0;
+            if (!this.inDegreeMap.has(deg)) this.inDegreeMap.set(deg, []);
+            this.inDegreeMap.get(deg)!.push(rn);
+        });
+
+        // 4. Initial Active Nodes: Those in Bucket 0
+        const bucket0 = this.inDegreeMap.get(0) || [];
+        this.activeNodes = bucket0.filter(n => this.checkTriggers(n.node.triggers));
+        this.activeNodes.sort((a, b) => (b.node.priority || 0) - (a.node.priority || 0));
+
+        console.log(`[Engine] DAG Initialized. Active:`, this.activeNodes.map(n => n.node.id));
     }
 
-    public async step(completedNodeId: NodeId): Promise<void> {
-        if (!this.initialized) return;
-        const node = this.nodeMap.get(completedNodeId);
+    private moveNodeBetweenBuckets(nodeId: NodeId, from: number, to: number) {
+        const fromBucket = this.inDegreeMap.get(from);
+        if (fromBucket) {
+            const idx = fromBucket.findIndex(n => n.node.id === nodeId);
+            if (idx !== -1) {
+                const node = fromBucket.splice(idx, 1)[0];
+                if (!this.inDegreeMap.has(to)) this.inDegreeMap.set(to, []);
+                this.inDegreeMap.get(to)!.push(node);
+            }
+        }
+    }
+
+    private async internalStep(completedNodeId: NodeId): Promise<void> {
+        const cleanId = completedNodeId.trim();
+        if (this.passedNodes.has(cleanId)) return;
+
+        const node = this.nodeMap.get(cleanId);
+        this.passedNodes.add(cleanId);
+
+        // Evict from bucket 0 and active list
+        const bucket0 = this.inDegreeMap.get(0);
+        if (bucket0) {
+            this.inDegreeMap.set(0, bucket0.filter(n => n.node.id !== cleanId));
+        }
+        this.activeNodes = this.activeNodes.filter(n => n.node.id !== cleanId);
+
+        // Update downstream
         if (node && node.postNodes) {
             node.postNodes.forEach(targetId => {
-                const target = this.nodes.find(n => n.node.id === targetId);
-                if (target) target.inDegree--;
+                const cleanTargetId = String(targetId).trim();
+                const currentDeg = this.nodeInDegree.get(cleanTargetId) || 0;
+                if (currentDeg > 0) {
+                    const newDeg = currentDeg - 1;
+                    this.nodeInDegree.set(cleanTargetId, newDeg);
+                    this.moveNodeBetweenBuckets(cleanTargetId, currentDeg, newDeg);
+
+                    if (newDeg === 0) {
+                        const target = this.nodes.find(n => n.node.id === cleanTargetId);
+                        if (target && this.checkTriggers(target.node.triggers)) {
+                            if (!this.activeNodes.find(an => an.node.id === target.node.id)) {
+                                this.activeNodes.push(target);
+                            }
+                        }
+                    }
+                }
             });
-            this.passedNodes.add(completedNodeId);
         }
-        this.updateActiveNodes();
+
+        this.logProgress(cleanId);
+    }
+
+    private logProgress(nodeId: NodeId) {
+        console.group(`[Engine] Narrative Progress: ${nodeId} ✅`);
+        console.log(`Passed: ${this.passedNodes.size} / Total: ${this.nodes.length}`);
+
+        const bucketStats = Array.from(this.inDegreeMap.entries())
+            .filter(([_, list]) => list.length > 0)
+            .sort(([a], [b]) => a - b)
+            .map(([deg, list]) => `Deg[${deg}]: ${list.length}`);
+        console.log(`Topol: ${bucketStats.join(' | ')}`);
+
+        if (this.activeNodes.length > 0) {
+            console.log(`Pool: ${this.activeNodes.map(n => n.node.id).join(', ')}`);
+            console.log(`Next: %c${this.activeNodes[0].node.id}`, 'color: #3b82f6; font-weight: 800;');
+        }
+        console.groupEnd();
     }
 
     private updateActiveNodes(): void {
-        this.activeNodes = this.nodes
-            .filter(n => n.inDegree === 0 && !this.passedNodes.has(n.node.id))
+        // Find all nodes that are at inDegree 0 and not passed
+        const ready = this.nodes
+            .filter(n => (this.nodeInDegree.get(n.node.id) || 0) <= 0 && !this.passedNodes.has(n.node.id))
             .filter(n => this.checkTriggers(n.node.triggers));
-        this.activeNodes.sort((a, b) => (b.node.priority || 0) - (a.node.priority || 0));
+
+        ready.sort((a, b) => (b.node.priority || 0) - (a.node.priority || 0));
+        this.activeNodes = ready;
     }
 
     private checkTriggers(triggers?: TriggerRequirement[]): boolean {
@@ -221,8 +367,23 @@ export class Engine {
         }
     }
 
+    /**
+    #DEFINE_UI_FUNCTION
+    @description 执行即时存档 (保存当前游戏状态)
+    @type action
+    @module Engine 引擎核心
+    @returns any
+    #END_DEFINE_UI_FUNCTION
+    */
     public saveGame(): SaveData {
-        const data: SaveData = { meta: { time: Date.now(), passedNodes: Array.from(this.passedNodes), inDegrees: this.nodes.map(n => ({ id: n.node.id, inDegree: n.inDegree })) }, modules: {} };
+        const data: SaveData = {
+            meta: {
+                time: Date.now(),
+                passedNodes: Array.from(this.passedNodes),
+                inDegrees: Array.from(this.nodeInDegree.entries()).map(([id, deg]) => ({ id, inDegree: deg }))
+            },
+            modules: {}
+        };
         this.instances.forEach(inst => {
             const name = inst.id || inst.constructor.name;
             data.modules[name] = inst.save();
@@ -233,14 +394,36 @@ export class Engine {
 
     public loadGame(saveData: SaveData): void {
         this.passedNodes = new Set(saveData.meta.passedNodes);
+        this.nodeInDegree.clear();
+        this.inDegreeMap.clear();
+
         saveData.meta.inDegrees.forEach(idState => {
+            const deg = idState.inDegree;
+            this.nodeInDegree.set(idState.id, deg);
+
             const target = this.nodes.find(n => n.node.id === idState.id);
-            if (target) target.inDegree = idState.inDegree;
+            if (target) {
+                if (!this.inDegreeMap.has(deg)) this.inDegreeMap.set(deg, []);
+                this.inDegreeMap.get(deg)!.push(target);
+            }
         });
+
         this.instances.forEach(inst => {
             const name = inst.id || inst.constructor.name;
             if (saveData.modules[name]) inst.load(saveData.modules[name]);
         });
         this.updateActiveNodes();
+    }
+
+    /**
+    #DEFINE_UI_FUNCTION
+    @description 永远不会自然进入的节点
+    @type judge
+    @module Engine 引擎核心
+    @returns boolean
+    #END_DEFINE_UI_FUNCTION
+        */
+    public isNeverStepNode(): boolean {
+        return false
     }
 }

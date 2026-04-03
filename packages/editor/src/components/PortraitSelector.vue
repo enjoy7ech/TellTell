@@ -2,14 +2,17 @@
 import { ref, nextTick, onUnmounted } from 'vue';
 import { createPopper } from '@popperjs/core';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     modelValue: string;
     charId: string;
     portraitUrls: Map<string, string>;
     portraitHandles: Map<string, Map<string, any>>;
     placeholder?: string;
     disabled?: boolean;
-}>();
+    size?: any;
+}>(), {
+    size: 'small'
+});
 
 const emit = defineEmits(['update:modelValue', 'visible-change']);
 
@@ -22,7 +25,7 @@ async function onMouseEnter(pKey: string, e: MouseEvent) {
     activeKey.value = pKey;
     const targetEl = e.currentTarget as HTMLElement;
     
-    const url = props.portraitUrls.get(`${props.charId}_${pKey}`);
+    const url = props.portraitUrls.get(`${props.charId}/${pKey}`);
     if (!url) return;
 
     previewUrl.value = url;
@@ -68,8 +71,10 @@ onUnmounted(() => {
             filterable
             :placeholder="placeholder || '选择表情...'"
             :disabled="disabled"
+            clearable
             @visible-change="(v: boolean) => emit('visible-change', v)"
             class="full-width"
+            :size="size"
         >
             <el-option label="-- 无立绘 --" value="" />
             <el-option
@@ -84,14 +89,14 @@ onUnmounted(() => {
                     @mouseleave="onMouseLeave"
                 >
                     <span class="p-name">{{ p }}</span>
-                    <div class="mini-hint" v-if="portraitUrls.get(`${charId}_${p}`)">
-                        <img :src="portraitUrls.get(`${charId}_${p}`)" />
+                    <div class="mini-hint" v-if="portraitUrls.get(`${charId}/${p}`)">
+                        <img :src="portraitUrls.get(`${charId}/${p}`)" />
                     </div>
                 </div>
             </el-option>
         </el-select>
 
-        <!-- Floating Portrait Preview -->
+        <!-- Floating Portrait Preview (White Style) -->
         <Teleport to="body">
             <div ref="previewCardRef" class="portrait-float-card">
                 <div class="portrait-inner" v-if="previewUrl">
@@ -119,6 +124,7 @@ onUnmounted(() => {
     align-items: center;
     width: 100%;
     height: 100%;
+    color: #475569;
 }
 
 .p-name {
@@ -127,31 +133,30 @@ onUnmounted(() => {
 }
 
 .mini-hint {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border-radius: 4px;
     overflow: hidden;
-    background: #000;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
 }
 
 .mini-hint img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.6;
 }
 
-/* Float Card Styles */
+/* Float Card Styles (White Mode) */
 .portrait-float-card {
     position: fixed;
-    z-index: 10001; /* Above select dropdown */
+    z-index: 10001;
     pointer-events: none;
-    background: rgba(10, 10, 10, 0.9);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 8px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    padding: 10px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.02);
     display: none;
     opacity: 0;
     transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -166,24 +171,25 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
 }
 
 .portrait-inner img {
-    max-height: 400px;
+    max-height: 440px;
     width: auto;
     object-fit: contain;
-    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+    border-radius: 4px;
 }
 
 .portrait-label {
-    font-size: 0.75rem;
-    font-weight: 900;
-    color: var(--accent-color);
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #3b82f6;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    background: rgba(0,0,0,0.4);
-    padding: 2px 12px;
-    border-radius: 4px;
+    letter-spacing: 1.5px;
+    background: #eff6ff;
+    padding: 4px 14px;
+    border-radius: 20px;
+    border: 1px solid #bfdbfe;
 }
 </style>

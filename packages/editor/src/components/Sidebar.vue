@@ -2,10 +2,12 @@
 import { ref, computed } from 'vue';
 import CharacterList from './CharacterList.vue';
 import StoryTree from './StoryTree.vue';
+import { FolderOpened, Pointer, MagicStick } from '@element-plus/icons-vue';
 
 const props = defineProps<{
     characterIds: string[];
     characterProfiles: Map<string, any>;
+    portraitUrls: Map<string, string>;
     folderGroups: Map<string, any[]>;
     directoryName: string;
     statusText: string;
@@ -45,9 +47,9 @@ const isLoaded = computed(() => props.directoryName !== "未选择任何文件�
         <!-- Conditional Tab Area -->
         <div v-if="isLoaded" class="tabbed-container">
             <el-tabs v-model="currentTab" class="sidebar-tabs" stretch>
-                <el-tab-pane label="剧情大纲" name="story">
+                 <el-tab-pane label="剧情" name="story">
                     <template #label>
-                        <span class="tab-label-custom">📖 STORY</span>
+                        <span class="tab-label-custom">📖 剧情</span>
                     </template>
                     <div class="tab-scroll-area">
                         <StoryTree 
@@ -58,14 +60,15 @@ const isLoaded = computed(() => props.directoryName !== "未选择任何文件�
                         />
                     </div>
                 </el-tab-pane>
-                <el-tab-pane label="角色管理" name="characters">
+                <el-tab-pane label="角色" name="characters">
                     <template #label>
-                        <span class="tab-label-custom">👥 CHARS</span>
+                        <span class="tab-label-custom">👥 角色</span>
                     </template>
                     <div class="tab-scroll-area">
                         <CharacterList 
                             :character-ids="characterIds"
                             :character-profiles="characterProfiles"
+                            :portrait-urls="portraitUrls"
                             @edit-profile="(id) => $emit('edit-profile', id)"
                         />
                     </div>
@@ -87,8 +90,8 @@ const isLoaded = computed(() => props.directoryName !== "未选择任何文件�
 <style scoped>
 .sidebar {
     width: 320px;
-    background: #0a0a0a;
-    border-right: 1px solid #222;
+    background: #ffffff;
+    border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -98,30 +101,30 @@ const isLoaded = computed(() => props.directoryName !== "未选择任何文件�
 
 .sidebar-header {
     padding: 24px 20px;
-    border-bottom: 1px solid #222;
+    border-bottom: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
 }
 
 .brand {
-    font-weight: 900;
-    font-size: 1.6rem;
-    color: #3498db;
-    letter-spacing: -1.5px;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: #0f172a;
+    letter-spacing: -1px;
     line-height: 1;
 }
 
 .sub {
     font-size: 0.65rem;
     text-transform: uppercase;
-    letter-spacing: 3px;
-    color: #555;
+    letter-spacing: 2px;
+    color: #94a3b8;
     margin-top: 4px;
     font-weight: 800;
 }
 
 .sidebar-padding { padding: 20px; }
-.top-area { background: rgba(255,255,255,0.02); }
+.top-area { background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
 
 .full-width { width: 100%; }
 
@@ -130,6 +133,7 @@ const isLoaded = computed(() => props.directoryName !== "未选择任何文件�
     font-weight: 800;
     font-size: 0.9rem;
     border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .dir-display {
@@ -137,14 +141,14 @@ const isLoaded = computed(() => props.directoryName !== "未选择任何文件�
     margin-top: 12px;
     word-break: break-all;
     font-family: 'JetBrains Mono', monospace;
-    background: #000;
+    background: #f1f5f9;
     padding: 8px 12px;
-    border-radius: 6px;
-    color: #f1c40f;
-    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    color: #475569;
+    border: 1px solid #e2e8f0;
 }
 
-.dir-display .label { font-weight: 800; color: #444; margin-right: 8px; }
+.dir-display .label { font-weight: 800; color: #94a3b8; margin-right: 8px; }
 
 .pulsing {
     animation: pulse-glow 2s infinite;
@@ -172,8 +176,8 @@ const isLoaded = computed(() => props.directoryName !== "未选择任何文件�
 
 :deep(.el-tabs__header) {
     margin: 0;
-    background: #000;
-    border-bottom: 1px solid #1a1a1a;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 :deep(.el-tabs__nav-wrap::after) {
@@ -181,7 +185,7 @@ const isLoaded = computed(() => props.directoryName !== "未选择任何文件�
 }
 
 :deep(.el-tabs__active-bar) {
-    background-color: #3498db;
+    background-color: #3b82f6;
     height: 3px;
     border-radius: 3px;
 }
@@ -190,11 +194,11 @@ const isLoaded = computed(() => props.directoryName !== "未选择任何文件�
     height: 50px;
     font-weight: 800;
     font-size: 0.75rem;
-    color: #555;
+    color: #94a3b8;
 }
 
 :deep(.el-tabs__item.is-active) {
-    color: #3498db;
+    color: #3b82f6;
 }
 
 :deep(.el-tabs__content) {
@@ -227,25 +231,24 @@ const isLoaded = computed(() => props.directoryName !== "未选择任何文件�
     justify-content: center;
     padding: 40px;
     text-align: center;
-    color: #444;
+    color: #94a3b8;
     position: relative;
 }
 
 .icon-container {
     padding: 24px;
-    background: #111;
+    background: #f8fafc;
     border-radius: 50%;
     margin-bottom: 24px;
-    border: 1px solid #222;
-    color: #3498db;
+    border: 1px solid #e2e8f0;
+    color: #3b82f6;
     z-index: 2;
 }
 
 .welcome-placeholder p {
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.6;
     max-width: 200px;
 }
 </style>
-

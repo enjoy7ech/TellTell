@@ -1,10 +1,18 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
     characterIds: string[];
     characterProfiles: Map<string, any>;
+    portraitUrls: Map<string, string>;
 }>();
 
-defineEmits(['edit-profile']);
+const emit = defineEmits(['edit-profile']);
+
+const getThumb = (charId: string) => {
+    for (const [key, url] of props.portraitUrls.entries()) {
+        if (key.startsWith(`${charId}/`)) return url;
+    }
+    return '';
+};
 </script>
 
 <template>
@@ -15,11 +23,15 @@ defineEmits(['edit-profile']);
             class="char-meta-item"
             @click="$emit('edit-profile', id)"
         >
-            <div class="char-meta-row">
-                <span class="char-meta-id">ID: {{ id }}</span>
+            <div class="char-thumb">
+                 <img v-if="getThumb(id)" :src="getThumb(id)" />
+                 <span v-else>?</span>
             </div>
-            <div class="char-name-display">{{ characterProfiles.get(id)?.name || id }}</div>
-            <div class="edit-profile-badge">⚙️ 编辑档案</div>
+            <div class="char-info">
+                <span class="char-meta-id">{{ id }}</span>
+                <div class="char-name-display">{{ characterProfiles.get(id)?.name || id }}</div>
+            </div>
+            <div class="edit-profile-badge">档案</div>
         </div>
         
         <div v-if="characterIds.length === 0" class="empty-state">
@@ -30,69 +42,100 @@ defineEmits(['edit-profile']);
 
 <style scoped>
 .char-meta-list {
-    padding: 15px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
     overflow-y: auto;
     flex: 1;
 }
 
 .char-meta-item {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    padding: 14px;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     position: relative;
-    border-left: 4px solid transparent;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 
 .char-meta-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(52, 152, 219, 0.2);
-    border-left-color: var(--accent-color);
+    background: #f8fafc;
+    border-color: #cbd5e1;
     transform: translateX(4px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.char-thumb {
+    width: 40px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+}
+
+.char-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.char-thumb span { font-size: 1rem; color: #94a3b8; font-weight: 800; }
+
+.char-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .char-meta-id {
     font-size: 0.65rem;
-    opacity: 0.4;
+    color: #3b82f6;
+    font-weight: 800;
     font-family: 'JetBrains Mono', monospace;
-    text-transform: uppercase;
+    opacity: 0.8;
 }
 
 .char-name-display {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 800;
-    color: #fff;
-    margin-top: 4px;
+    color: #1e293b; /* Pure contrast blackish */
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .edit-profile-badge {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    font-size: 0.65rem;
-    color: #fff;
-    background: #8e44ad;
-    padding: 2px 8px;
-    border-radius: 100px;
-    opacity: 0.4;
-    transition: all 0.3s;
-    font-weight: bold;
+    margin-left: auto;
+    font-size: 0.6rem;
+    color: #94a3b8;
+    background: #f1f5f9;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
 }
 
 .char-meta-item:hover .edit-profile-badge {
-    opacity: 1;
+    color: #ffffff;
+    background: #3b82f6;
 }
 
 .empty-state {
     text-align: center;
-    color: #555;
-    font-style: italic;
-    margin-top: 40px;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    margin-top: 30px;
+    font-weight: 600;
 }
 </style>

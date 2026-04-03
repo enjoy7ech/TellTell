@@ -19,9 +19,19 @@ export interface CharacterData {
 
     info: {
         text: string;
-        lock: boolean;
         unlockRequirement?: TriggerRequirement[];
     }[];
+    knowledge: Map<CharacterId, {
+        name: boolean;
+        phoneNumber: boolean;
+        height: boolean;
+        weight: boolean;
+        age: boolean;
+        bloodType: boolean;
+        birthDate: boolean;
+        constellation: boolean;
+        info: boolean[];
+    }>; // 此角色对其他角色的知识
 }
 
 /**
@@ -48,6 +58,11 @@ export class CharacterManager implements ISerializable {
             if (char.audioMap && !(char.audioMap instanceof Map)) {
                 char.audioMap = new Map(Object.entries(char.audioMap));
             }
+            if (char.knowledge && !(char.knowledge instanceof Map)) {
+                char.knowledge = new Map(Object.entries(char.knowledge).map(([k, v]) => [k, v]));
+            } else if (!char.knowledge) {
+                char.knowledge = new Map();
+            }
             this.characters.set(char.id, char);
         });
     }
@@ -61,6 +76,7 @@ export class CharacterManager implements ISerializable {
             out.favor = Object.fromEntries(char.favor);
             if (char.picMap instanceof Map) out.picMap = Object.fromEntries(char.picMap);
             if (char.audioMap instanceof Map) out.audioMap = Object.fromEntries(char.audioMap);
+            if (char.knowledge instanceof Map) out.knowledge = Object.fromEntries(char.knowledge);
             return out;
         });
     }
@@ -138,9 +154,25 @@ export class CharacterManager implements ISerializable {
         return favorVal < n;
     }
 
+    /**
+#DEFINE_UI_FUNCTION
+@description 判定指定角色的某条档案信息是否已解锁
+@type judge
+@module Character 角色状态
+@param charId 角色ID | unit:CharacterSelector
+@param infoIndex 信息索引 | unit:el-input-number | min:0
+@returns boolean
+#END_DEFINE_UI_FUNCTION
+     */
     public isInfoUnlocked(charId: CharacterId, infoIndex: number): boolean {
-        const char = this.characters.get(charId);
-        return char ? !char.info[infoIndex].lock : false;
+        const protagonist = this.getProtagonist();
+        if (protagonist?.knowledge) {
+            const kMap = (protagonist.knowledge as any).get ? protagonist.knowledge.get(charId) : (protagonist.knowledge as any)[charId];
+            if (kMap && kMap.info) {
+                return !!kMap.info[infoIndex];
+            }
+        }
+        return false; // Default to locked if unknown
     }
 
     /**
@@ -148,5 +180,12 @@ export class CharacterManager implements ISerializable {
      */
     public getCharacter(charId: CharacterId): CharacterData | undefined {
         return this.characters.get(charId);
+    }
+
+    /**
+     * 获取主角
+     */
+    public getProtagonist(): CharacterData | undefined {
+        return Array.from(this.characters.values()).find(c => c.isProtagonist);
     }
 }

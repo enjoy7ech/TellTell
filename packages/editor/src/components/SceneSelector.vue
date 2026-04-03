@@ -2,13 +2,16 @@
 import { ref, nextTick, onUnmounted } from 'vue';
 import { createPopper } from '@popperjs/core';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     modelValue: string;
     sceneUrls: Map<string, string>;
     sceneHandles: Map<string, any>;
     placeholder?: string;
     disabled?: boolean;
-}>();
+    size?: any;
+}>(), {
+    size: 'small'
+});
 
 const emit = defineEmits(['update:modelValue', 'visible-change']);
 
@@ -68,7 +71,9 @@ onUnmounted(() => {
             :placeholder="placeholder || '选择背景图...'"
             :disabled="disabled"
             @visible-change="(v: boolean) => emit('visible-change', v)"
+            clearable
             class="full-width"
+            :size="size"
         >
             <el-option label="-- 无背景 --" value="" />
             <el-option
@@ -90,7 +95,7 @@ onUnmounted(() => {
             </el-option>
         </el-select>
 
-        <!-- Floating Scene Preview -->
+        <!-- Floating Scene Preview (White Style Restoration) -->
         <Teleport to="body">
             <div ref="previewCardRef" class="scene-float-card">
                 <div class="scene-inner" v-if="previewUrl">
@@ -117,6 +122,7 @@ onUnmounted(() => {
     align-items: center;
     width: 100%;
     height: 100%;
+    color: #475569;
 }
 
 .s-name {
@@ -125,30 +131,30 @@ onUnmounted(() => {
 }
 
 .mini-hint {
-    width: 40px;
-    height: 24px;
+    width: 48px;
+    height: 28px;
     border-radius: 4px;
     overflow: hidden;
-    background: #000;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
 }
 
 .mini-hint img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.6;
 }
 
+/* Float Card Styles (White Mode) */
 .scene-float-card {
     position: fixed;
     z-index: 10001;
     pointer-events: none;
-    background: rgba(10, 10, 10, 0.9);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
-    padding: 10px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    padding: 12px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.1);
     display: none;
     opacity: 0;
     transition: opacity 0.2s;
@@ -163,20 +169,25 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
 }
 
 .scene-inner img {
-    max-width: 400px;
+    max-width: 440px;
     border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    border: 1px solid #f1f5f9;
 }
 
 .scene-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 900;
-    color: var(--accent-color);
+    color: #3b82f6;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
+    background: #eff6ff;
+    padding: 4px 14px;
+    border-radius: 20px;
+    border: 1px solid #bfdbfe;
 }
 </style>

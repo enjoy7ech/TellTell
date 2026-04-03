@@ -53,11 +53,29 @@ export class MapManager implements ISerializable {
 
     // --- Action ---
 
+    /**
+#DEFINE_UI_FUNCTION
+@description 解锁指定地点
+@type action
+@module Map 地图系统
+@param locId 地点ID | unit:LocationSelector
+@returns Promise<void>
+#END_DEFINE_UI_FUNCTION
+     */
     public async unlockLocation(locId: LocationId): Promise<void> {
         const loc = this.locations.get(locId);
         if (loc) loc.lock = false;
     }
 
+    /**
+#DEFINE_UI_FUNCTION
+@description 切换当前大地图
+@type action
+@module Map 地图系统
+@param mapId 地图ID | unit:MapSelector
+@returns Promise<void>
+#END_DEFINE_UI_FUNCTION
+     */
     public async switchMap(mapId: MapId): Promise<void> {
         if (this.maps.has(mapId)) {
             this.currentMapId = mapId;
@@ -65,6 +83,15 @@ export class MapManager implements ISerializable {
         }
     }
 
+    /**
+#DEFINE_UI_FUNCTION
+@description 传送至指定地点 (需已解锁)
+@type action
+@module Map 地图系统
+@param locId 地点ID | unit:LocationSelector
+@returns Promise<void>
+#END_DEFINE_UI_FUNCTION
+     */
     public async teleport(locId: LocationId): Promise<void> {
         const loc = this.locations.get(locId);
         if (loc && !loc.lock) {
@@ -75,10 +102,28 @@ export class MapManager implements ISerializable {
 
     // --- Trigger ---
 
+    /**
+#DEFINE_UI_FUNCTION
+@description 判定指定地点是否已解锁
+@type judge
+@module Map 地图系统
+@param locId 地点ID | unit:LocationSelector
+@returns boolean
+#END_DEFINE_UI_FUNCTION
+     */
     public isLocationUnlocked(locId: LocationId): boolean {
         return this.locations.get(locId)?.lock === false;
     }
 
+    /**
+#DEFINE_UI_FUNCTION
+@description 判定玩家当前是否在某地点
+@type judge
+@module Map 地图系统
+@param locId 地点ID | unit:LocationSelector
+@returns boolean
+#END_DEFINE_UI_FUNCTION
+     */
     public isAtLocation(locId: LocationId): boolean {
         return this.currentLoctionId === locId;
     }

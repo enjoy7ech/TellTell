@@ -1,23 +1,32 @@
 :root {
-  --bg-color: #0d0d0d;
-  --sidebar-bg: #141414;
-  --panel-bg: rgba(20, 20, 20, 0.85);
-  --accent-color: #3498db;
-  --accent-glow: rgba(52, 152, 219, 0.3);
-  --text-main: #e0e0e0;
-  --text-dim: #888;
-  --border-color: #222;
-  --border-hover: #333;
-  --card-bg: #1a1a1a;
-  --card-hover: #222;
-  
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 15px 40px rgba(0, 0, 0, 0.7);
-  
+  /* Light Theme Palette */
+  --bg-color: #f8fafc;
+  --sidebar-bg: #ffffff;
+  --panel-bg: rgba(255, 255, 255, 0.95);
+  --accent-color: #3b82f6;
+  /* Modern Blue */
+  --accent-glow: rgba(59, 130, 246, 0.15);
+  --text-main: #1e293b;
+  --text-dim: #64748b;
+  --border-color: #e2e8f0;
+  --border-hover: #cbd5e1;
+  --card-bg: #ffffff;
+  --card-hover: #f1f5f9;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
+
+  /* Element Plus Light Theme Overrides */
+  --el-color-primary: #3b82f6;
+  --el-bg-color: #ffffff;
+  --el-bg-color-overlay: #ffffff;
+  --el-text-color-primary: #1e293b;
+  --el-border-color-base: #e2e8f0;
 }
 
 * {
@@ -37,10 +46,10 @@ html {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Global Scrollbar Optimization */
+/* Global Scrollbar Optimization (Light) */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -48,12 +57,12 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333;
+  background: #cbd5e1;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #444;
+  background: #94a3b8;
 }
 
 #app {
@@ -64,7 +73,7 @@ html {
   overflow: hidden;
 }
 
-/* Base Component Styling Purified */
+/* Base Component Styling (Light & Clean) */
 .sidebar {
   width: 300px;
   background: var(--sidebar-bg);
@@ -73,17 +82,16 @@ html {
   flex-direction: column;
   flex-shrink: 0;
   z-index: 10;
-  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.02);
 }
 
 .sidebar-header {
   padding: 24px 20px;
   border-bottom: 1px solid var(--border-color);
-  font-weight: 900;
+  font-weight: 800;
   font-size: 1.1rem;
-  letter-spacing: 1px;
-  color: var(--accent-color);
-  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #0f172a;
 }
 
 .secondary-header {
@@ -92,8 +100,9 @@ html {
   font-weight: 800;
   text-transform: uppercase;
   color: var(--text-dim);
-  background: rgba(0,0,0,0.1);
+  background: #f8fafc;
   letter-spacing: 1.5px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .char-list {
@@ -112,21 +121,22 @@ html {
   align-items: center;
   gap: 12px;
   border: 1px solid transparent;
+  color: #475569;
 }
 
 .char-item:hover {
   background: var(--card-hover);
   border-color: var(--border-hover);
-  transform: translateX(4px);
 }
 
 .char-item.active {
-  background: var(--accent-color);
-  color: white;
-  box-shadow: 0 4px 12px var(--accent-glow);
+  background: #eff6ff;
+  color: var(--accent-color);
+  font-weight: 700;
+  border-color: #bfdbfe;
 }
 
-/* Editor Layout Purity */
+/* Editor Layout */
 .editor-container {
   flex: 1;
   min-width: 0;
@@ -141,9 +151,6 @@ html {
   position: relative;
   overflow: hidden;
   background-color: var(--bg-color);
-  background-image:
-    radial-gradient(circle, #222 1px, transparent 1px);
-  background-size: 32px 32px;
 }
 
 canvas#main-canvas {
@@ -160,7 +167,7 @@ canvas#main-canvas {
   overflow-y: auto;
   flex-shrink: 0;
   z-index: 20;
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.03);
 }
 
 .property-panel.hidden {
@@ -168,43 +175,48 @@ canvas#main-canvas {
 }
 
 /* Global Disabled Styles */
-:disabled, 
+:disabled,
 .is-disabled {
-  opacity: 0.4 !important;
   cursor: not-allowed !important;
-  filter: grayscale(1);
-  pointer-events: none;
 }
 
-/* Element Plus Custom Theme (Purified) */
-:root {
-  --el-color-primary: #3498db;
-  --el-bg-color: #1a1a1a;
-  --el-bg-color-overlay: #222;
-  --el-text-color-primary: #e0e0e0;
-  --el-border-color-base: #333;
-}
-
-.el-input__wrapper, .el-textarea__inner, .el-select__wrapper {
-  background-color: #000 !important;
-  box-shadow: 0 0 0 1px #222 inset !important;
-  border-radius: var(--radius-sm) !important;
+/* Element Plus Custom Theme (Light & Clean) */
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 1px #e2e8f0 inset !important;
+  border-radius: var(--radius-md) !important;
   transition: all 0.2s !important;
 }
 
-.el-input__wrapper:hover, .el-select__wrapper:hover {
-  box-shadow: 0 0 0 1px #444 inset !important;
+.el-input__wrapper:hover,
+.el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px #cbd5e1 inset !important;
 }
 
-.el-input__wrapper.is-focus, .el-select__wrapper.is-focus {
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focus {
   box-shadow: 0 0 0 1px var(--accent-color) inset !important;
+  background-color: #fff !important;
 }
 
-/* Glassmorphism Buttons */
+/* Clean UI Buttons */
+.el-button {
+  border-radius: var(--radius-md) !important;
+  font-weight: 600 !important;
+}
+
 .el-button.is-plain:not(.el-button--danger) {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(4px);
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+.el-button.is-plain:hover {
+  background: #f8fafc !important;
+  border-color: var(--accent-color) !important;
+  color: var(--accent-color) !important;
 }
 
 /* Global el-input-number hack: align left */
@@ -216,13 +228,22 @@ canvas#main-canvas {
   padding-left: 12px !important;
 }
 
-.el-button.is-plain:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: var(--accent-color) !important;
+.el-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
 }
 
-.el-card {
-  background: var(--card-bg) !important;
-  border: 1px solid var(--border-color) !important;
-  border-radius: var(--radius-md) !important;
+/* Popover & Tooltip tweaks for Light mode */
+.el-popover.el-popper {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: var(--shadow-lg) !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+.el-divider__text {
+  background-color: #ffffff !important;
+  color: #94a3b8 !important;
 }

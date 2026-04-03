@@ -79,6 +79,26 @@
             }
           }
         ]
+      },
+      "isInfoUnlocked": {
+        "label": "判定指定角色的某条档案信息是否已解锁",
+        "type": "judge",
+        "params": [
+          {
+            "name": "charId",
+            "label": "角色ID",
+            "type": "CharacterSelector",
+            "props": {}
+          },
+          {
+            "name": "infoIndex",
+            "label": "信息索引",
+            "type": "el-input-number",
+            "props": {
+              "min": "0"
+            }
+          }
+        ]
       }
     }
   },
@@ -158,6 +178,103 @@
             "props": {
               "controls": false
             }
+          }
+        ]
+      }
+    }
+  },
+  "Engine": {
+    "label": "引擎核心",
+    "funcs": {
+      "startStoryNode": {
+        "label": "启动指定的剧情节点",
+        "type": "action",
+        "params": [
+          {
+            "name": "nodeId",
+            "label": "节点ID",
+            "type": "StoryNodeSelect",
+            "props": {}
+          }
+        ]
+      },
+      "next": {
+        "label": "推进至下一段剧情（集合切页与自动跳转）",
+        "type": "action",
+        "params": []
+      },
+      "saveGame": {
+        "label": "执行即时存档 (保存当前游戏状态)",
+        "type": "action",
+        "params": []
+      },
+      "isNeverStepNode": {
+        "label": "永远不会自然进入的节点",
+        "type": "judge",
+        "params": []
+      }
+    }
+  },
+  "Map": {
+    "label": "地图系统",
+    "funcs": {
+      "unlockLocation": {
+        "label": "解锁指定地点",
+        "type": "action",
+        "params": [
+          {
+            "name": "locId",
+            "label": "地点ID",
+            "type": "LocationSelector",
+            "props": {}
+          }
+        ]
+      },
+      "switchMap": {
+        "label": "切换当前大地图",
+        "type": "action",
+        "params": [
+          {
+            "name": "mapId",
+            "label": "地图ID",
+            "type": "MapSelector",
+            "props": {}
+          }
+        ]
+      },
+      "teleport": {
+        "label": "传送至指定地点 (需已解锁)",
+        "type": "action",
+        "params": [
+          {
+            "name": "locId",
+            "label": "地点ID",
+            "type": "LocationSelector",
+            "props": {}
+          }
+        ]
+      },
+      "isLocationUnlocked": {
+        "label": "判定指定地点是否已解锁",
+        "type": "judge",
+        "params": [
+          {
+            "name": "locId",
+            "label": "地点ID",
+            "type": "LocationSelector",
+            "props": {}
+          }
+        ]
+      },
+      "isAtLocation": {
+        "label": "判定玩家当前是否在某地点",
+        "type": "judge",
+        "params": [
+          {
+            "name": "locId",
+            "label": "地点ID",
+            "type": "LocationSelector",
+            "props": {}
           }
         ]
       }

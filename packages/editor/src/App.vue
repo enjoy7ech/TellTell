@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive, markRaw } from 'vue';
+import { onMounted, reactive, markRaw } from 'vue';
 import Sidebar from './components/Sidebar.vue';
 import Toolbar from './components/Toolbar.vue';
 import GraphCanvas from './components/GraphCanvas.vue';
 import PropertyPanel from './components/PropertyPanel.vue';
+import FramePopover from './components/FramePopover.vue';
 import RelationshipGraph from './components/RelationshipGraph.vue';
 import { ScriptEditorService } from './services/ScriptEditorService';
 import { Connection, View, RefreshRight, SemiSelect } from '@element-plus/icons-vue';
@@ -17,33 +18,46 @@ const state = reactive({
     portraitHandles: new Map(),
     sceneHandles: new Map(),
     characterProfiles: new Map(),
+    
+    // Asset Previews (Shared Cache)
+    portraitUrls: reactive(new Map<string, string>()),
+    sceneUrls: reactive(new Map<string, string>()),
+    
     folderGroups: new Map<string, any[]>(),
     directoryName: "未选择任何文件夹",
     statusText: "就绪",
     hasDirectory: false,
     previewUrl: "http://localhost:5173",
-    showPreview: true,
+    showPreview: false,
     showGraph: false,
+    autoExpandFrameIndex: -1,
+    
+    // Graph State (Vue Flow)
+    nodes: [] as any[],
+    edges: [] as any[],
+    
+    // Popover State
+    popover: {
+        show: false,
+        node: null as any,
+        index: -1,
+        x: 0,
+        y: 0
+    },
     
     // Services
     editorService: null as any,
 });
 
-const graphCanvasRef = ref();
+
 
 onMounted(async () => {
-    // Initialize the core editor service (handles LiteGraph & FileSystem)
     const service = new ScriptEditorService(state);
     state.editorService = markRaw(service);
-    
-    // Connect LiteGraph to the canvas element inside the GraphCanvas component
-    if (graphCanvasRef.value) {
-        service.initCanvas(graphCanvasRef.value.canvasEl);
-    }
 });
 
 function handleSave() {
-    state.editorService?.saveProject();
+    state.editorService?.triggerAutoSave();
 }
 
 function handlePublish() {
@@ -70,6 +84,7 @@ function handleAddFolder() {
         <Sidebar 
             :character-ids="state.characterIds"
             :character-profiles="state.characterProfiles"
+            :portrait-urls="state.portraitUrls"
             :folder-groups="state.folderGroups"
             :directory-name="state.directoryName"
             :status-text="state.statusText"
@@ -89,10 +104,11 @@ function handleAddFolder() {
                 @save="handleSave"
                 @publish="handlePublish"
                 @play="handlePlay"
+                @add-node="() => state.editorService?.addNode()"
             />
 
-            <!-- LiteGraph Canvas Area -->
-            <GraphCanvas ref="graphCanvasRef" />
+            <!-- Vue Flow Canvas Area -->
+            <GraphCanvas ref="graphCanvasRef" :state="state" />
 
             <!-- Vertical Workspace Tools (Purified) -->
             <div class="vertical-toolbar">
@@ -133,20 +149,42 @@ function handleAddFolder() {
         <aside class="property-panel" :class="{ hidden: !state.node && !state.profile }">
              <PropertyPanel 
                 v-if="state.node || state.profile"
+                :key="state.node?.id || state.profile?.id"
                 :node="state.node"
                 :profile="state.profile"
                 :profile-id="state.profileId"
                 :character-ids="state.characterIds"
                 :portrait-handles="state.portraitHandles"
+                :portrait-urls="state.portraitUrls"
                 :scene-handles="state.sceneHandles"
+                :scene-urls="state.sceneUrls"
                 :character-profiles="state.characterProfiles"
                 :get-image-url="state.editorService?.getImageUrl"
                 :on-save="handleSave"
                 :all-node-ids="state.editorService?.getAllNodeIds()"
+                :auto-expand-index="state.autoExpandFrameIndex"
             />
         </aside>
 
         <!-- Modals -->
+        <FramePopover v-if="state.popover.show"
+            :node="state.popover.node"
+            :index="state.popover.index"
+            :x="state.popover.x"
+            :y="state.popover.y"
+            :character-ids="state.characterIds"
+            :character-profiles="state.characterProfiles"
+            :portrait-handles="state.portraitHandles"
+            :portrait-urls="state.portraitUrls"
+            :scene-handles="state.sceneHandles"
+            :scene-urls="state.sceneUrls"
+            :node-ids="state.editorService?.getAllNodeIds()"
+            :get-image-url="state.editorService?.getImageUrl"
+            :preload-portraits="(id: string) => state.editorService?.preloadPortraits(id, state.portraitUrls)"
+            @close="state.popover.show = false"
+            @change="handleSave"
+        />
+
         <RelationshipGraph v-if="state.showGraph" 
             :character-ids="state.characterIds"
             :character-profiles="state.characterProfiles"
@@ -180,8 +218,9 @@ function handleAddFolder() {
     position: absolute;
     bottom: 30px;
     right: 30px;
-    width: 320px;
-    height: 568px; /* Standard Mobile Ratio */
+    width: 430px;
+    zoom: 0.6;
+    height: 932px; /* Standard Mobile Ratio */
     background: #000;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
@@ -262,7 +301,6 @@ function handleAddFolder() {
     right: 30px;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(20,20,20,0.8);
     backdrop-filter: blur(20px);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);

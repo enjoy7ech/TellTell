@@ -10,9 +10,11 @@
     "dev:editor": "pnpm --filter @telltell/editor run dev",
     "dev:demo": "pnpm --filter @telltell/demo run dev",
     "build": "pnpm run build -r",
-    "telltell": "tsx ./packages/cli/src/index.ts"
+    "telltell": "pnpm --filter @telltell/cli dev --",
+    "meta": "cd packages/core && npx tsx ../cli/src/index.ts meta"
   },
   "devDependencies": {
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "vite": "^8.0.1"
   }

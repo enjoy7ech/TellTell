@@ -1,49 +1,37 @@
-import { LGraph, LGraphCanvas, LiteGraph, LGraphNode } from "litegraph.js";
-
 /**
- * Pure logic and state management service for TellTell Editor.
- * Decoupled from native DOM manipulation.
+ * ScriptEditorService - Refactored for Vue Flow
+ * Manages the project state, file system, and graph topology.
  */
 export class ScriptEditorService {
-    private graph: LGraph;
-    private canvas: LGraphCanvas | null = null;
-    private state: any; // Reactive Vue State
-
+    private state: any;
     private directoryHandle: FileSystemDirectoryHandle | null = null;
     private projectFileHandle: FileSystemFileHandle | null = null;
-    private portraitHandles: Map<string, Map<string, FileSystemFileHandle>> = new Map();
 
     constructor(state: any) {
         this.state = state;
-        this.graph = new LGraph();
-        this.initNodeTypes();
-        this.graph.start();
-        
-        // Connect some core graph events to Vue state
-        (this.graph as any).onNodeAdded = () => this.refreshFileList();
-        (this.graph as any).onNodeRemoved = () => this.refreshFileList();
-        
-        console.log("ScriptEditorService initialized (Pure Logic Mode).");
+        console.log("ScriptEditorService initialized (Vue Flow Mode).");
         this.tryAutoLoadDirectory();
     }
 
-    /**
-     * 尝试从 IndexedDB 恢复上一次选择的文件夹
-     */
     private async tryAutoLoadDirectory() {
         try {
             const handle = await this.getStoredHandle();
             if (handle) {
-                // 需要用户交互才能重新激活权限，大部分浏览器会在第一次请求时弹出恢复提示
                 const permission = await (handle as any).queryPermission({ mode: 'readwrite' });
                 if (permission === 'granted') {
                     await this.openDirectory(handle);
                 } else {
-                    console.log("Auto-load directory found but needs permission.");
-                    this.state.statusText = "发现上次打开的文件夹，点击侧边栏开启。";
+                    this.state.statusText = "发现上次打开的文件夹，点击开启。";
                 }
             }
-        } catch (e) { console.warn("Auto-load directory failed", e); }
+        } catch (e) { console.warn("Auto-load failed", e); }
+    }
+
+    public async selectDirectory() {
+        try {
+            const handle = await (window as any).showDirectoryPicker();
+            await this.openDirectory(handle);
+        } catch (e) { console.error("Select directory failed", e); }
     }
 
     private async openDirectory(handle: FileSystemDirectoryHandle) {
@@ -55,358 +43,330 @@ export class ScriptEditorService {
             this.projectFileHandle = await handle.getFileHandle("workspace.tell", { create: true });
             await this.loadProject();
         } catch (err) { console.error(err); }
-        this.state.statusText = `已还原项目: ${handle.name}`;
+        this.state.statusText = `已载入: ${handle.name}`;
         await this.storeHandle(handle);
     }
 
-    public initCanvas(canvasEl: HTMLCanvasElement) {
-        this.canvas = new LGraphCanvas(canvasEl, this.graph);
-        this.canvas.background_image = "";
-        this.canvas.allow_dragnodes = true;
-        this.canvas.allow_searchbox = true;
-        this.setupCustomMenu();
-        this.initResizeObserver(canvasEl);
-    }
+    /**
+     * Scan Assets: Portraits & Scenes
+     */
+    public async scanAssets(dirHandle: FileSystemDirectoryHandle) {
+        console.log("[Service] Scanning assets...");
+        this.state.characterIds = [];
+        this.state.portraitHandles.clear();
+        this.state.sceneHandles.clear();
+        this.state.portraitUrls.clear();
+        this.state.sceneUrls.clear();
 
-    private initResizeObserver(canvasEl: HTMLCanvasElement) {
-        const parent = canvasEl.parentElement;
-        if (!parent) return;
-        const observer = new ResizeObserver(() => {
-            const width = parent.clientWidth;
-            const height = parent.clientHeight;
-            if (width > 0 && height > 0) {
-                canvasEl.width = width;
-                canvasEl.height = height;
-                this.canvas?.resize(width, height);
-                (this.canvas as any)?.setDirty(true, true);
-            }
-        });
-        observer.observe(parent);
-    }
-
-    private setupCustomMenu() {
-        const self = this;
-        if (!this.canvas) return;
-        this.canvas.getMenuOptions = function () {
-            return [
-                {
-                    content: "新建剧情节点",
-                    callback: (_value: any, _options: any, e: MouseEvent) => {
-                        const node = LiteGraph.createNode("TellTell/StoryNode");
-                        if (node && self.canvas) {
-                            node.pos = self.canvas.convertEventToCanvasOffset(e);
-                            self.graph.add(node);
-                        }
-                    }
-                },
-                null,
-                {
-                    content: "清理所有节点",
-                    callback: () => {
-                        if (confirm("确定要清空整个画布吗？")) {
-                            self.graph.clear();
-                        }
-                    }
-                },
-                {
-                    content: "自动排列布局",
-                    callback: () => self.graph.arrange()
-                }
-            ];
-        };
-    }
-
-    private initNodeTypes() {
-        const self = this;
-        class StoryNode extends LGraphNode {
-            constructor() {
-                super();
-                this.title = "Story Node";
-                this.addInput("In", LiteGraph.EVENT);
-                this.addOutput("Next", LiteGraph.EVENT);
-                this.properties = {
-                    id: "node_" + Math.random().toString(36).substr(2, 6),
-                    repeatable: false,
-                    priority: 0,
-                    folder: "Root",
-                    display: [
-                        {
-                            screen: { pic: "", text: "" },
-                            dialog: { char: "", portrait: "", text: "请输入剧情文本" }
-                        }
-                    ],
-                    triggers: [],
-                    mount: [],
-                    unMount: []
-                };
-                this.size = [240, 110];
-            }
-
-            onDrawForeground(ctx: CanvasRenderingContext2D) {
-                if (this.flags.collapsed) return;
-                ctx.fillStyle = "#555";
-                ctx.fillRect(5, 30, this.size[0] - 10, 1);
-                ctx.fillStyle = "#888";
-                ctx.font = "italic 9px Inter";
-                ctx.fillText(this.properties.id, 10, 42);
-                ctx.fillStyle = "#f1c40f";
-                ctx.font = "bold 9px Inter";
-                ctx.fillText(`分镜: ${this.properties.display?.length || 0}`, 10, 56);
-                
-                ctx.fillStyle = "#fff";
-                ctx.font = "11px Inter";
-                const firstFrame = this.properties.display?.[0];
-                const desc = firstFrame?.dialog?.text || "(Empty Node)";
-                const truncated = desc.length > 25 ? desc.substr(0, 25) + "..." : desc;
-                ctx.fillText(truncated, 10, 75);
-            }
-
-            onSelected() { self.selectNode(this); }
-            onDeselected() { self.deselectNode(); }
-        }
-        LiteGraph.registerNodeType("TellTell/StoryNode", StoryNode as any);
-    }
-
-    public selectNode(node: any) {
-        this.state.profile = null;
-        this.state.node = node;
-        if (node.properties) {
-            if (!node.properties.triggers) node.properties.triggers = [];
-            if (!node.properties.mount) node.properties.mount = [];
-            if (!node.properties.unMount) node.properties.unMount = [];
-        }
-    }
-
-    private deselectNode() {
-       // Only hide if we aren't editing a profile
-       if (this.state.node) this.state.node = null;
-    }
-
-    public showCharacterProfile(id: string) {
-        this.state.node = null;
-        this.state.profileId = id;
-        this.state.profile = this.state.characterProfiles.get(id);
-    }
-
-    public async selectDirectory() {
         try {
-            // @ts-ignore
-            const handle = await window.showDirectoryPicker();
-            await this.openDirectory(handle);
-        } catch (err) { console.error(err); }
+            // Find base assets handle
+            let assetsHandle = dirHandle;
+            try {
+                assetsHandle = await dirHandle.getDirectoryHandle("assets");
+            } catch (e) { /* use root if assets folder not present */ }
+
+            // Scan Characters
+            try {
+                const charDir = await assetsHandle.getDirectoryHandle("character");
+                for await (const entry of (charDir as any).values()) {
+                    if (entry.kind === 'directory') {
+                        const charId = entry.name;
+                        this.state.characterIds.push(charId);
+
+                        // Auto-create profile if missing, matching existing metadata structure
+                        if (!this.state.characterProfiles.has(charId)) {
+                            console.log(`[Service] Auto-initializing profile for discovered character: ${charId}`);
+                            this.state.characterProfiles.set(charId, {
+                                id: charId,
+                                name: charId,
+                                favor: {},
+                                isProtagonist: false,
+                                height: 165,
+                                weight: 50,
+                                age: 18,
+                                birthDate: "01-01",
+                                bloodType: "O",
+                                info: [],
+                                phoneNumber: ""
+                            });
+                        }
+
+                        const picDir = await entry.getDirectoryHandle("portrait");
+                        const portraitMap = new Map();
+                        for await (const pic of (picDir as any).values()) {
+                            if (pic.kind === 'file' && pic.name.match(/\.(png|jpg|jpeg|webp)$/i)) {
+                                portraitMap.set(pic.name, pic);
+                                const file = await pic.getFile();
+                                this.state.portraitUrls.set(`${charId}/${pic.name}`, URL.createObjectURL(file));
+                            }
+                        }
+                        this.state.portraitHandles.set(charId, portraitMap);
+                    }
+                }
+            } catch (e) { console.warn("Character scan failed or not present", e); }
+
+            // Scan Scenes
+            try {
+                const sceneDir = await assetsHandle.getDirectoryHandle("scene");
+                for await (const entry of (sceneDir as any).values()) {
+                    if (entry.kind === 'file' && entry.name.match(/\.(png|jpg|jpeg|webp)$/i)) {
+                        this.state.sceneHandles.set(entry.name, entry);
+                        const file = await entry.getFile();
+                        this.state.sceneUrls.set(entry.name, URL.createObjectURL(file));
+                    }
+                }
+            } catch (e) { console.warn("Scene scan failed or not present", e); }
+
+        } catch (e) {
+            console.error("Asset scanning engine failed", e);
+        }
     }
 
     /**
-     * IndexedDB 存储辅助 (原生实现，无需额外依赖)
+     * Load Project: Convert legacy format or use new Vue Flow format
+     */
+    private async loadProject() {
+        if (!this.projectFileHandle) return;
+        const file = await this.projectFileHandle.getFile();
+        const text = await file.text();
+        if (!text) return;
+
+        try {
+            const data = JSON.parse(text);
+            if (data.graph) {
+                // Better detection: if nodes don't have 'position' prop, it's LiteGraph pos
+                const isLegacy = data.graph.nodes && data.graph.nodes.length > 0 && !data.graph.nodes[0].position;
+                if (isLegacy) {
+                    this.convertLegacyToVueFlow(data.graph);
+                } else {
+                    this.state.nodes = data.graph.nodes || [];
+                    this.state.edges = data.graph.edges || [];
+                }
+            }
+            const profiles = data.characterProfiles || data.characters;
+            if (profiles) {
+                this.state.characterProfiles = new Map(Object.entries(profiles));
+            }
+        } catch (e) { console.error("Load project failed", e); }
+    }
+
+    private convertLegacyToVueFlow(graph: any) {
+        console.log("[Service] Converting legacy graph to Vue Flow...");
+        const nodes: any[] = [];
+        const edges: any[] = [];
+
+        (graph.nodes || []).forEach((n: any) => {
+            const pos = n.pos || {};
+            nodes.push({
+                id: n.id.toString(),
+                label: n.title || n.properties?.id || "Node",
+                position: { x: Number(pos[0]) || 0, y: Number(pos[1]) || 0 },
+                data: { ...n.properties },
+                type: 'default'
+            });
+        });
+
+        (graph.links || []).forEach((l: any) => {
+            edges.push({
+                id: `e${l[0]}`,
+                source: l[1].toString(),
+                target: l[3].toString(),
+                sourceHandle: 'out',
+                targetHandle: 'in'
+            });
+        });
+
+        this.state.nodes = nodes;
+        this.state.edges = edges;
+    }
+
+    private isSaving = false;
+    private saveTimeout: any = null;
+
+    public triggerAutoSave() {
+        if (!this.projectFileHandle) return;
+
+        this.state.statusText = "由于修改，即将保存...";
+
+        if (this.saveTimeout) clearTimeout(this.saveTimeout);
+        this.saveTimeout = setTimeout(() => this.executeSave(), 2000);
+    }
+
+    private async executeSave() {
+        if (!this.projectFileHandle || this.isSaving) return;
+        this.isSaving = true;
+        console.log("[Service] Executing Debounced Save...");
+
+        try {
+            const data = {
+                graph: {
+                    nodes: this.state.nodes,
+                    edges: this.state.edges
+                },
+                characterProfiles: Object.fromEntries(this.state.characterProfiles)
+            };
+
+            const writable = await this.projectFileHandle.createWritable();
+            await writable.write(JSON.stringify(data, null, 2));
+            await writable.close();
+
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ":" +
+                now.getMinutes().toString().padStart(2, '0') + ":" +
+                now.getSeconds().toString().padStart(2, '0');
+
+            this.state.statusText = `已同步: ${timeStr}`;
+        } catch (e) {
+            console.error("Auto-save throttled or failed", e);
+            this.state.statusText = "同步失败";
+        } finally {
+            this.isSaving = false;
+        }
+    }
+
+    /**
+     * Publish Bundle: Export for Engine.ts
+     */
+    public async publishBundle() {
+        if (!this.directoryHandle) return;
+        console.log("[Service] Publishing bundle...");
+
+        const bundle: any = {
+            nodes: this.state.nodes.map((n: any) => ({
+                id: (n.data.id || n.id).trim(),
+                ...n.data,
+                // Explicitly map portrait -> pic for each frame to ensure naming consistency
+                display: (n.data.display || []).map((f: any) => ({
+                    ...f,
+                    dialog: f.dialog ? {
+                        ...f.dialog,
+                        pic: (f.dialog.pic || f.dialog.portrait || "").trim(),
+                        portrait: undefined // Strip the old name
+                    } : undefined
+                })),
+                postNodes: this.state.edges
+                    .filter((e: any) => e.source === n.id)
+                    .map((e: any) => {
+                        const target = this.nodes.find((tn: any) => tn.id === e.target);
+                        if (target) {
+                            return (target.data.id || target.id).trim();
+                        }
+                        return null;
+                    }).filter((id: any) => id !== null)
+            })),
+            characters: Array.from(this.state.characterProfiles.values()).map(c => ({
+                ...c,
+                id: c.id.trim()
+            }))
+        };
+
+        try {
+            // Priority: write to 'assets' folder if it exists (for Vite project structure)
+            let dataDir: FileSystemDirectoryHandle;
+            try {
+                const assetsDir = await this.directoryHandle.getDirectoryHandle("assets", { create: true });
+                dataDir = await assetsDir.getDirectoryHandle("data", { create: true });
+            } catch (e) {
+                // Fallback to legacy structure
+                const publicDir = await this.directoryHandle.getDirectoryHandle("public", { create: true });
+                const assetsDir = await publicDir.getDirectoryHandle("assets", { create: true });
+                dataDir = await assetsDir.getDirectoryHandle("data", { create: true });
+            }
+
+            const handle = await dataDir.getFileHandle("bundle_story.json", { create: true });
+            const writable = await handle.createWritable();
+            await writable.write(JSON.stringify(bundle, null, 2));
+            await writable.close();
+
+            this.state.statusText = "发布成功";
+        } catch (e) { console.error("Publish failed", e); }
+    }
+
+    /**
+     * Character Management
+     */
+
+
+    public showCharacterProfile(id: string) {
+        if (!this.state.characterProfiles.has(id)) {
+            this.state.characterProfiles.set(id, { id, name: id, favor: {}, info: [] });
+        }
+        this.state.profile = this.state.characterProfiles.get(id);
+        this.state.profileId = id;
+    }
+
+    /**
+     * Node Management
+     */
+    public addNode(pos = { x: 100, y: 100 }) {
+        const id = `node_${Math.random().toString(36).substr(2, 6)}`;
+        const newNode = {
+            id,
+            position: pos,
+            label: id,
+            data: {
+                id,
+                display: [{
+                    screen: { pic: "", text: "" },
+                    dialog: { char: "", portrait: "", text: "" }
+                }],
+                triggers: [],
+                mount: [],
+                unMount: []
+            },
+            type: 'default'
+        };
+        this.state.nodes.push(newNode);
+        this.triggerAutoSave();
+    }
+
+    public deleteNode(id: string) {
+        this.state.nodes = this.state.nodes.filter((n: any) => n.id !== id);
+        this.state.edges = this.state.edges.filter((e: any) => e.source !== id && e.target !== id);
+        this.state.node = null;
+        this.triggerAutoSave();
+    }
+
+    public getAllNodeIds() {
+        return this.state.nodes.map((n: any) => n.data.id || n.id);
+    }
+
+    public selectNode(node: any) {
+        this.state.node = node;
+        this.state.profile = null;
+    }
+
+
+
+    /**
+     * IndexedDB Storage for Directory Handles
      */
     private async storeHandle(handle: FileSystemDirectoryHandle) {
+        const db = await this.openDB();
         return new Promise<void>((resolve, reject) => {
-            const request = indexedDB.open("TellTellEditor", 1);
-            request.onupgradeneeded = (e: any) => {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains("handles")) {
-                    db.createObjectStore("handles");
-                }
-            };
-            request.onsuccess = (e: any) => {
-                const db = e.target.result;
-                const tx = db.transaction("handles", "readwrite");
-                const store = tx.objectStore("handles");
-                store.put(handle, "lastDirectory");
-                tx.oncomplete = () => resolve();
-            };
-            request.onerror = () => reject(request.error);
+            const tx = db.transaction("handles", "readwrite");
+            const req = tx.objectStore("handles").put(handle, "lastDir");
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
         });
     }
 
     private async getStoredHandle(): Promise<FileSystemDirectoryHandle | null> {
+        const db = await this.openDB();
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open("TellTellEditor", 1);
-            request.onupgradeneeded = (e: any) => {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains("handles")) {
-                    db.createObjectStore("handles");
-                }
-            };
-            request.onsuccess = (e: any) => {
-                const db = e.target.result;
-                const tx = db.transaction("handles", "readonly");
-                const store = tx.objectStore("handles");
-                const getReq = store.get("lastDirectory");
-                getReq.onsuccess = () => resolve(getReq.result || null);
-                getReq.onerror = () => reject(getReq.error);
-            };
-            request.onerror = () => reject(request.error);
+            const tx = db.transaction("handles", "readonly");
+            const req = tx.objectStore("handles").get("lastDir");
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
         });
     }
 
-    private sceneHandles: Map<string, FileSystemFileHandle> = new Map();
-
-    private async scanAssets(handle: FileSystemDirectoryHandle) {
-        this.state.characterIds = [];
-        this.portraitHandles.clear();
-        this.sceneHandles.clear();
-        this.state.portraitHandles = this.portraitHandles;
-        this.state.sceneHandles = this.sceneHandles;
-
-        try {
-            const assetsHandle = await handle.getDirectoryHandle("assets");
-            
-            // 1. Scan Characters & Portraits
-            try {
-                const charRootHandle = await assetsHandle.getDirectoryHandle("character");
-                for await (const entry of (charRootHandle as any).values()) {
-                    if (entry.kind === "directory") {
-                        const charId = entry.name;
-                        this.state.characterIds.push(charId);
-                        if (!this.state.characterProfiles.has(charId)) {
-                            this.state.characterProfiles.set(charId, { 
-                                id: charId, name: charId.toUpperCase(), favor: {},
-                                isProtagonist: false, height: 165, age: 18, birthDate: "01-01", info: []
-                            });
-                        }
-                        try {
-                            const subHandle = await entry.getDirectoryHandle("portrait");
-                            const pMap = new Map<string, FileSystemFileHandle>();
-                            for await (const pEntry of (subHandle as any).values()) {
-                                if (pEntry.kind === "file" && pEntry.name.endsWith(".webp")) {
-                                    pMap.set(pEntry.name.split('.')[0], pEntry);
-                                }
-                            }
-                            this.portraitHandles.set(charId, pMap);
-                        } catch (e) {}
-                    }
-                }
-            } catch (e) { console.warn("Character folder missing"); }
-
-            // 2. Scan Scene Backgrounds
-            try {
-                const sceneHandle = await assetsHandle.getDirectoryHandle("scene");
-                for await (const entry of (sceneHandle as any).values()) {
-                    if (entry.kind === "file" && entry.name.endsWith(".webp")) {
-                        const sceneId = entry.name.split('.')[0];
-                        this.sceneHandles.set(sceneId, entry);
-                    }
-                }
-            } catch (e) { console.warn("Scene folder missing"); }
-
-        } catch (e) { console.warn("Assets directory not found", e); }
-        this.refreshFileList();
-    }
-
-    private async loadProject() {
-        if (!this.projectFileHandle) return;
-        try {
-            const file = await this.projectFileHandle.getFile();
-            const text = await file.text();
-            if (text.trim()) {
-                const data = JSON.parse(text);
-                this.graph.configure(data.graph || data);
-                if (data.characterProfiles) {
-                    for (const [k, v] of Object.entries(data.characterProfiles)) {
-                        this.state.characterProfiles.set(k, v);
-                    }
-                }
-                this.refreshFileList();
-            }
-        } catch (err) { console.error(err); }
-    }
-
-    public async saveProject() {
-        if (!this.projectFileHandle) return;
-        try {
-            const data = {
-                graph: this.graph.serialize(),
-                characterProfiles: Object.fromEntries(this.state.characterProfiles)
-            };
-            const writable = await (this.projectFileHandle as any).createWritable();
-            await writable.write(JSON.stringify(data, null, 2));
-            await writable.close();
-            this.state.statusText = "项目已自动保存";
-        } catch (err) { console.error(err); }
-    }
-
-    public async publishBundle() {
-        if (!this.directoryHandle) return alert("请先打开素材文件夹。");
-        try {
-            const result: { nodes: any[], characters: any[] } = { 
-                nodes: [],
-                characters: Array.from(this.state.characterProfiles.values())
-            };
-            const nodes = (this.graph as any)._nodes || [];
-            nodes.forEach((node: any) => {
-                result.nodes.push({
-                    id: node.properties.id,
-                    repeatable: node.properties.repeatable || false,
-                    priority: node.properties.priority || 0,
-                    display: node.properties.display.map((frame: any) => ({
-                        screen: frame.screen,
-                        dialog: { char: frame.dialog.char, text: frame.dialog.text, pic: frame.dialog.portrait }
-                    })),
-                    triggers: node.properties.triggers || [],
-                    mount: node.properties.mount || [],
-                    unMount: node.properties.unMount || [],
-                    postNodes: (node.outputs?.[0]?.links || []).map((linkId: number) => {
-                        const targetNode = this.graph.getNodeById(this.graph.links[linkId].target_id);
-                        return (targetNode as any).properties.id;
-                    })
-                });
-            });
-
-            // 发布到 assets/data/bundle_story.json
-            const assetsHandle = await this.directoryHandle.getDirectoryHandle("assets");
-            const dataHandle = await assetsHandle.getDirectoryHandle("data");
-            const bundleHandle = await dataHandle.getFileHandle("bundle_story.json", { create: true });
-            
-            const writable = await (bundleHandle as any).createWritable();
-            await writable.write(JSON.stringify(result, null, 2));
-            await writable.close();
-            alert("发布成功！已导出 assets/data/bundle_story.json");
-        } catch (err) { console.error(err); }
-    }
-
-    public refreshFileList() {
-        const nodes = (this.graph as any)._nodes || [];
-        const groups = new Map<string, any[]>();
-        nodes.forEach((n: any) => {
-            const folder = n.properties.folder || "Root";
-            if (!groups.has(folder)) groups.set(folder, []);
-            groups.get(folder)?.push(n);
+    private openDB(): Promise<IDBDatabase> {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open("TellTellEditor", 1);
+            req.onupgradeneeded = () => req.result.createObjectStore("handles");
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
         });
-        this.state.folderGroups = groups;
-    }
-
-    private handleUrlCache: Map<FileSystemFileHandle, string> = new Map();
-
-    public getImageUrl = async (handle: FileSystemFileHandle | undefined): Promise<string> => {
-        if (!handle) return "";
-        if (this.handleUrlCache.has(handle)) return this.handleUrlCache.get(handle)!;
-        
-        try {
-            const file = await handle.getFile();
-            const url = URL.createObjectURL(file);
-            this.handleUrlCache.set(handle, url);
-            return url;
-        } catch (e) {
-            console.error("Image load fail", e);
-            return "";
-        }
-    }
-
-    public playPreview() {
-        this.saveProject().then(() => window.open("/", "_blank"));
-    }
-
-    public addFolder() {
-        const name = prompt("输入新章节文件夹名称:", "新章节");
-        if (name) {
-            this.state.statusText = `文件夹 '${name}' 已创建 (逻辑占位)`;
-            console.log(`Folder ${name} placeholder`);
-        }
-    }
-
-    public getAllNodeIds(): string[] {
-        const nodes = (this.graph as any)._nodes || [];
-        return nodes.map((n: any) => n.properties?.id).filter(Boolean);
     }
 }

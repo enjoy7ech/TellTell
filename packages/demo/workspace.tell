@@ -1,74 +1,60 @@
 {
   "graph": {
-    "last_node_id": 1,
-    "last_link_id": 0,
     "nodes": [
       {
-        "id": 1,
-        "type": "TellTell/StoryNode",
-        "pos": {
-          "0": 224,
-          "1": 245,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0
+        "id": "node_qxv5u1",
+        "position": {
+          "x": 291.46908770394646,
+          "y": 178.2146097141281
         },
-        "size": [
-          240,
-          110
-        ],
-        "flags": {},
-        "order": 0,
-        "mode": 0,
-        "inputs": [
-          {
-            "name": "In",
-            "type": -1,
-            "link": null
-          }
-        ],
-        "outputs": [
-          {
-            "name": "Next",
-            "type": -1,
-            "links": null
-          }
-        ],
-        "title": "Story Node",
-        "properties": {
-          "id": "node_7ae5oo",
-          "repeatable": false,
-          "priority": 0,
-          "folder": "Root",
+        "label": "node_qxv5u1",
+        "data": {
+          "id": "开幕",
           "display": [
             {
               "screen": {
-                "pic": "bg_cafe_day",
-                "text": "3年了"
+                "pic": "",
+                "text": "这是个很久之前的故事"
               },
               "dialog": {
-                "char": "aoi",
-                "portrait": "normal",
-                "text": "回来啦"
+                "char": "",
+                "portrait": "",
+                "text": ""
+              }
+            },
+            {
+              "screen": {
+                "pic": "",
+                "text": "你的选择"
+              },
+              "dialog": {
+                "portrait": "",
+                "text": ""
               },
               "choice": [
                 {
-                  "text": "交往",
+                  "text": "表白",
                   "target": "",
-                  "requirement": [
+                  "requirement": [],
+                  "action": [
                     {
-                      "module": "Requirement",
-                      "func": "favorGT",
+                      "module": "Engine",
+                      "func": "startStoryNode",
                       "params": [
-                        "aoi",
-                        "protagonist",
-                        20
+                        "表白"
                       ]
+                    }
+                  ]
+                },
+                {
+                  "text": "啥也不嘎巴",
+                  "target": "",
+                  "requirement": [],
+                  "action": [
+                    {
+                      "module": "Engine",
+                      "func": "next",
+                      "params": []
                     }
                   ]
                 }
@@ -81,96 +67,176 @@
           "triggers": [],
           "mount": [],
           "unMount": []
-        }
+        },
+        "type": "default"
+      },
+      {
+        "id": "node_sfqhmn",
+        "position": {
+          "x": 399.5110966727622,
+          "y": 390.83970202100033
+        },
+        "label": "node_sfqhmn",
+        "data": {
+          "id": "表白",
+          "display": [
+            {
+              "screen": {
+                "pic": "",
+                "text": ""
+              },
+              "dialog": {
+                "char": "",
+                "portrait": "",
+                "text": ""
+              },
+              "choice": []
+            }
+          ],
+          "triggers": [],
+          "mount": [],
+          "unMount": []
+        },
+        "type": "default"
+      },
+      {
+        "id": "node_hx51b6",
+        "position": {
+          "x": 658.988852545955,
+          "y": 227.10479639051704
+        },
+        "label": "node_hx51b6",
+        "data": {
+          "id": "人生结束",
+          "display": [
+            {
+              "screen": {
+                "pic": "",
+                "text": ""
+              },
+              "dialog": {
+                "char": "mrlin",
+                "portrait": "",
+                "text": "你来了",
+                "pic": "normal.webp"
+              },
+              "choice": []
+            }
+          ],
+          "triggers": [],
+          "mount": [],
+          "unMount": []
+        },
+        "type": "default"
       }
     ],
-    "links": [],
-    "groups": [],
-    "config": {},
-    "extra": {},
-    "version": 0.4
+    "edges": [
+      {
+        "id": "e-node_qxv5u1-node_hx51b6-1775209684518",
+        "source": "node_qxv5u1",
+        "target": "node_hx51b6",
+        "animated": true
+      },
+      {
+        "id": "e-node_sfqhmn-node_hx51b6-1775209687374",
+        "source": "node_sfqhmn",
+        "target": "node_hx51b6",
+        "animated": true
+      }
+    ]
   },
   "characterProfiles": {
     "aoi": {
       "id": "aoi",
-      "name": "葵",
-      "favor": {
-        "auntie": 10,
-        "haruno": 20
-      },
+      "name": "aoi",
+      "favor": {},
       "isProtagonist": false,
       "height": 165,
-      "age": 27,
-      "birthDate": "01-09",
-      "info": [
-        {
-          "text": "新公开传记条目...",
-          "lock": true,
-          "unlockRequirement": []
-        }
-      ],
-      "weight": 48,
-      "bloodType": "O"
+      "weight": 50,
+      "age": 18,
+      "birthDate": "01-01",
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": "",
+      "constellation": "摩羯座"
     },
     "auntie": {
       "id": "auntie",
-      "name": "AUNTIE",
+      "name": "auntie",
       "favor": {},
       "isProtagonist": false,
       "height": 165,
+      "weight": 50,
       "age": 18,
       "birthDate": "01-01",
-      "info": []
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
     },
     "haruno": {
       "id": "haruno",
-      "name": "HARUNO",
+      "name": "haruno",
       "favor": {},
       "isProtagonist": false,
       "height": 165,
+      "weight": 50,
       "age": 18,
       "birthDate": "01-01",
-      "info": []
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
     },
     "kaisheng": {
       "id": "kaisheng",
-      "name": "盛",
+      "name": "kaisheng",
       "favor": {},
       "isProtagonist": false,
       "height": 165,
+      "weight": 50,
       "age": 18,
       "birthDate": "01-01",
-      "info": []
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
     },
     "mrlin": {
       "id": "mrlin",
-      "name": "马琳",
+      "name": "mrlin",
       "favor": {},
       "isProtagonist": false,
       "height": 165,
+      "weight": 50,
       "age": 18,
       "birthDate": "01-01",
-      "info": []
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
     },
     "protagonist": {
       "id": "protagonist",
-      "name": "野",
+      "name": "protagonist",
       "favor": {},
       "isProtagonist": false,
       "height": 165,
+      "weight": 50,
       "age": 18,
       "birthDate": "01-01",
-      "info": []
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
     },
     "yuki": {
       "id": "yuki",
-      "name": "由纪",
+      "name": "yuki",
       "favor": {},
       "isProtagonist": false,
       "height": 165,
+      "weight": 50,
       "age": 18,
       "birthDate": "01-01",
-      "info": []
+      "bloodType": "O",
+      "info": [],
+      "phoneNumber": ""
     }
   }
 }
