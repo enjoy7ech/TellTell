@@ -53,8 +53,10 @@
                   "action": [
                     {
                       "module": "Engine",
-                      "func": "next",
-                      "params": []
+                      "func": "startStoryNode",
+                      "params": [
+                        "人生结束"
+                      ]
                     }
                   ]
                 }
@@ -82,18 +84,25 @@
           "display": [
             {
               "screen": {
-                "pic": "",
+                "pic": "bg_dock_day.webp",
                 "text": ""
               },
               "dialog": {
-                "char": "",
+                "char": "haruno",
                 "portrait": "",
-                "text": ""
+                "text": "我也喜欢你！",
+                "pic": "happy.webp"
               },
               "choice": []
             }
           ],
-          "triggers": [],
+          "triggers": [
+            {
+              "module": "Engine",
+              "func": "isNeverStepNode",
+              "params": []
+            }
+          ],
           "mount": [],
           "unMount": []
         },
@@ -102,8 +111,8 @@
       {
         "id": "node_hx51b6",
         "position": {
-          "x": 658.988852545955,
-          "y": 227.10479639051704
+          "x": 612.988852545955,
+          "y": 192.10479639051704
         },
         "label": "node_hx51b6",
         "data": {
@@ -111,7 +120,7 @@
           "display": [
             {
               "screen": {
-                "pic": "",
+                "pic": "bg_home_day.webp",
                 "text": ""
               },
               "dialog": {
@@ -123,27 +132,20 @@
               "choice": []
             }
           ],
-          "triggers": [],
+          "triggers": [
+            {
+              "module": "Engine",
+              "func": "isNeverStepNode",
+              "params": []
+            }
+          ],
           "mount": [],
           "unMount": []
         },
         "type": "default"
       }
     ],
-    "edges": [
-      {
-        "id": "e-node_qxv5u1-node_hx51b6-1775209684518",
-        "source": "node_qxv5u1",
-        "target": "node_hx51b6",
-        "animated": true
-      },
-      {
-        "id": "e-node_sfqhmn-node_hx51b6-1775209687374",
-        "source": "node_sfqhmn",
-        "target": "node_hx51b6",
-        "animated": true
-      }
-    ]
+    "edges": []
   },
   "characterProfiles": {
     "aoi": {

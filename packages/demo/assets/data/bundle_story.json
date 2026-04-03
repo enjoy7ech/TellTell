@@ -45,8 +45,10 @@
               "action": [
                 {
                   "module": "Engine",
-                  "func": "next",
-                  "params": []
+                  "func": "startStoryNode",
+                  "params": [
+                    "人生结束"
+                  ]
                 }
               ]
             }
@@ -59,39 +61,41 @@
       "triggers": [],
       "mount": [],
       "unMount": [],
-      "postNodes": [
-        "人生结束"
-      ]
+      "postNodes": []
     },
     {
       "id": "表白",
       "display": [
         {
           "screen": {
-            "pic": "",
+            "pic": "bg_dock_day.webp",
             "text": ""
           },
           "dialog": {
-            "char": "",
-            "text": "",
-            "pic": ""
+            "char": "haruno",
+            "text": "我也喜欢你！",
+            "pic": "happy.webp"
           },
           "choice": []
         }
       ],
-      "triggers": [],
+      "triggers": [
+        {
+          "module": "Engine",
+          "func": "isNeverStepNode",
+          "params": []
+        }
+      ],
       "mount": [],
       "unMount": [],
-      "postNodes": [
-        "人生结束"
-      ]
+      "postNodes": []
     },
     {
       "id": "人生结束",
       "display": [
         {
           "screen": {
-            "pic": "",
+            "pic": "bg_home_day.webp",
             "text": ""
           },
           "dialog": {
@@ -102,7 +106,13 @@
           "choice": []
         }
       ],
-      "triggers": [],
+      "triggers": [
+        {
+          "module": "Engine",
+          "func": "isNeverStepNode",
+          "params": []
+        }
+      ],
       "mount": [],
       "unMount": [],
       "postNodes": []

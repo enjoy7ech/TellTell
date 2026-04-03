@@ -126,7 +126,7 @@ export class Engine {
         if (!this.initialized) await this.init();
         const cleanId = String(nodeId).trim();
         this.currentNode = this.nodeMap.get(cleanId) || null;
-        this.currentFrameIndex = 0;
+        this.currentFrameIndex = -1;
 
         if (this.currentNode) {
             await this.internalStep(this.currentNode.id);
