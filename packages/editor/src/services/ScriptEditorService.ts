@@ -35,6 +35,7 @@ export class ScriptEditorService {
     }
 
     private async openDirectory(handle: FileSystemDirectoryHandle) {
+        this.resetState();
         this.directoryHandle = handle;
         this.state.directoryName = handle.name;
         this.state.hasDirectory = true;
@@ -45,6 +46,37 @@ export class ScriptEditorService {
         } catch (err) { console.error(err); }
         this.state.statusText = `已载入: ${handle.name}`;
         await this.storeHandle(handle);
+    }
+
+    private resetState() {
+        console.log("[Service] Resetting state for new directory...");
+        
+        // Revoke asset URLs to avoid memory leaks
+        if (this.state.portraitUrls) {
+            this.state.portraitUrls.forEach((url: string) => URL.revokeObjectURL(url));
+            this.state.portraitUrls.clear();
+        }
+        if (this.state.sceneUrls) {
+            this.state.sceneUrls.forEach((url: string) => URL.revokeObjectURL(url));
+            this.state.sceneUrls.clear();
+        }
+        
+        // Clear maps and arrays
+        this.state.nodes = [];
+        this.state.edges = [];
+        this.state.characterIds = [];
+        this.state.characterProfiles.clear();
+        this.state.portraitHandles.clear();
+        this.state.sceneHandles.clear();
+        
+        // Clear selection and UI state
+        this.state.node = null;
+        this.state.profile = null;
+        this.state.profileId = "";
+        this.state.showGraph = false;
+        if (this.state.popover) {
+            this.state.popover.visible = false;
+        }
     }
 
     /**
@@ -128,9 +160,12 @@ export class ScriptEditorService {
             this.state.sceneHandles.clear();
             tempSceneHandles.forEach((v, k) => this.state.sceneHandles.set(k, v));
             
+            // Revoke old URLs before clearing and replacing
+            this.state.portraitUrls.forEach((url: string) => URL.revokeObjectURL(url));
             this.state.portraitUrls.clear();
             tempPortraitUrls.forEach((v, k) => this.state.portraitUrls.set(k, v));
             
+            this.state.sceneUrls.forEach((url: string) => URL.revokeObjectURL(url));
             this.state.sceneUrls.clear();
             tempSceneUrls.forEach((v, k) => this.state.sceneUrls.set(k, v));
 
