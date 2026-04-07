@@ -9,7 +9,7 @@
   "scripts": {
     "dev:editor": "pnpm --filter @telltell/editor run dev",
     "dev:demo": "pnpm --filter @telltell/demo run dev",
-    "build": "pnpm run build -r",
+    "build": "pnpm -r build",
     "telltell": "pnpm --filter @telltell/cli dev --",
     "meta": "cd packages/core && npx tsx ../cli/src/index.ts meta"
   },

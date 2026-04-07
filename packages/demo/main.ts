@@ -16,6 +16,16 @@ async function bootstrap() {
     // 3. 启动引擎逻辑
     await engine.init();
 
+    // Support for StartNode (from editor preview)
+    const urlParams = new URLSearchParams(window.location.search);
+    const startNodeId = urlParams.get('startNode');
+    if (startNodeId) {
+        console.log(`[Demo] Start play from specified node: ${startNodeId}`);
+        await engine.startStoryNode(startNodeId);
+    } else {
+         // Default: wait for user interaction to start or handle first node auto-play if layout logic demands it
+    }
+
     // 4. 暴露全局变量方便调试
     (window as any).game = {
         engine,

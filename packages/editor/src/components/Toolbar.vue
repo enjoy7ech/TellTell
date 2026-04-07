@@ -3,6 +3,7 @@ import { Box, CaretRight, Plus } from '@element-plus/icons-vue';
 
 defineProps<{
     statusText: string;
+    directoryName: string;
 }>();
 
 defineEmits(['save', 'publish', 'play', 'add-node']);
@@ -10,7 +11,6 @@ defineEmits(['save', 'publish', 'play', 'add-node']);
 
 <template>
     <header class="toolbar">
-        <div class="toolbar-brand">TellTell <span class="workspace-label">WORKSPACE</span></div>
         
         <div class="toolbar-actions">
             <el-button type="info" plain @click="$emit('add-node')" :icon="Plus" class="glass-btn">
@@ -56,14 +56,12 @@ defineEmits(['save', 'publish', 'play', 'add-node']);
     gap: 8px;
 }
 
-.workspace-label {
-    font-weight: 800;
+.project-tag {
+    font-weight: 900;
     font-size: 0.65rem;
-    background: var(--accent-color);
-    color: #fff;
-    padding: 2px 6px;
-    border-radius: 4px;
+    color: var(--accent-color);
     letter-spacing: 1px;
+    margin-right: 4px;
 }
 
 .toolbar-actions {

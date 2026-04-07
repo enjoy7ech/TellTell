@@ -52,14 +52,15 @@ export class ScriptEditorService {
      */
     public async scanAssets(dirHandle: FileSystemDirectoryHandle) {
         console.log("[Service] Scanning assets...");
-        this.state.characterIds = [];
-        this.state.portraitHandles.clear();
-        this.state.sceneHandles.clear();
-        this.state.portraitUrls.clear();
-        this.state.sceneUrls.clear();
+        
+        // Use temporary collections to avoid UI flickering/emptying
+        const tempCharacterIds: string[] = [];
+        const tempPortraitHandles = new Map();
+        const tempSceneHandles = new Map();
+        const tempPortraitUrls = new Map();
+        const tempSceneUrls = new Map();
 
         try {
-            // Find base assets handle
             let assetsHandle = dirHandle;
             try {
                 assetsHandle = await dirHandle.getDirectoryHandle("assets");
@@ -71,11 +72,11 @@ export class ScriptEditorService {
                 for await (const entry of (charDir as any).values()) {
                     if (entry.kind === 'directory') {
                         const charId = entry.name;
-                        this.state.characterIds.push(charId);
+                        tempCharacterIds.push(charId);
 
-                        // Auto-create profile if missing, matching existing metadata structure
+                        // Auto-create profile if missing
                         if (!this.state.characterProfiles.has(charId)) {
-                            console.log(`[Service] Auto-initializing profile for discovered character: ${charId}`);
+                            console.log(`[Service] Auto-initializing profile for: ${charId}`);
                             this.state.characterProfiles.set(charId, {
                                 id: charId,
                                 name: charId,
@@ -97,28 +98,70 @@ export class ScriptEditorService {
                             if (pic.kind === 'file' && pic.name.match(/\.(png|jpg|jpeg|webp)$/i)) {
                                 portraitMap.set(pic.name, pic);
                                 const file = await pic.getFile();
-                                this.state.portraitUrls.set(`${charId}/${pic.name}`, URL.createObjectURL(file));
+                                tempPortraitUrls.set(`${charId}/${pic.name}`, URL.createObjectURL(file));
                             }
                         }
-                        this.state.portraitHandles.set(charId, portraitMap);
+                        tempPortraitHandles.set(charId, portraitMap);
                     }
                 }
-            } catch (e) { console.warn("Character scan failed or not present", e); }
+            } catch (e) { console.warn("Character scan failed", e); }
 
             // Scan Scenes
             try {
                 const sceneDir = await assetsHandle.getDirectoryHandle("scene");
                 for await (const entry of (sceneDir as any).values()) {
                     if (entry.kind === 'file' && entry.name.match(/\.(png|jpg|jpeg|webp)$/i)) {
-                        this.state.sceneHandles.set(entry.name, entry);
+                        tempSceneHandles.set(entry.name, entry);
                         const file = await entry.getFile();
-                        this.state.sceneUrls.set(entry.name, URL.createObjectURL(file));
+                        tempSceneUrls.set(entry.name, URL.createObjectURL(file));
                     }
                 }
-            } catch (e) { console.warn("Scene scan failed or not present", e); }
+            } catch (e) { console.warn("Scene scan failed", e); }
+
+            // ATOMIC SWAP: Only update state when everything is successfully scanned
+            this.state.characterIds = tempCharacterIds;
+            
+            // For Maps, we clear and re-fill or replace if it's a reactive object
+            this.state.portraitHandles.clear();
+            tempPortraitHandles.forEach((v, k) => this.state.portraitHandles.set(k, v));
+            
+            this.state.sceneHandles.clear();
+            tempSceneHandles.forEach((v, k) => this.state.sceneHandles.set(k, v));
+            
+            this.state.portraitUrls.clear();
+            tempPortraitUrls.forEach((v, k) => this.state.portraitUrls.set(k, v));
+            
+            this.state.sceneUrls.clear();
+            tempSceneUrls.forEach((v, k) => this.state.sceneUrls.set(k, v));
 
         } catch (e) {
             console.error("Asset scanning engine failed", e);
+        }
+    }
+
+    /**
+     * Save Asset: Common method for saving blobs to character/portrait
+     */
+    public async savePortraitAsset(charId: string, portraitId: string, blob: Blob) {
+        if (!this.directoryHandle) throw new Error("没有打开任何目录");
+        try {
+            const assetsHandle = await this.directoryHandle.getDirectoryHandle("assets", { create: true });
+            const characterHandle = await assetsHandle.getDirectoryHandle("character", { create: true });
+            const charRoot = await characterHandle.getDirectoryHandle(charId, { create: true });
+            const portraitRoot = await charRoot.getDirectoryHandle("portrait", { create: true });
+            
+            // Force .webp extension for size efficiency
+            const filename = portraitId.endsWith('.webp') ? portraitId : `${portraitId}.webp`;
+            const fileHandle = await portraitRoot.getFileHandle(filename, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            
+            console.log(`[Service] Asset saved: ${charId}/${filename}`);
+            return true;
+        } catch (e) {
+            console.error(`Save portrait failed: ${charId}/${portraitId}`, e);
+            throw e;
         }
     }
 
@@ -143,10 +186,17 @@ export class ScriptEditorService {
                     this.state.edges = data.graph.edges || [];
                 }
             }
+            this.state.statusText = "项目已载入";
+
+            // Migration: handle legacy profiles in main file
             const profiles = data.characterProfiles || data.characters;
             if (profiles) {
-                this.state.characterProfiles = new Map(Object.entries(profiles));
+                console.log("[Service] Migrating legacy profiles...");
+                for (const [id, prof] of Object.entries(profiles)) {
+                    this.state.characterProfiles.set(id, prof);
+                }
             }
+            await this.loadCharacters();
         } catch (e) { console.error("Load project failed", e); }
     }
 
@@ -202,13 +252,17 @@ export class ScriptEditorService {
                 graph: {
                     nodes: this.state.nodes,
                     edges: this.state.edges
-                },
-                characterProfiles: Object.fromEntries(this.state.characterProfiles)
+                }
             };
 
             const writable = await this.projectFileHandle.createWritable();
             await writable.write(JSON.stringify(data, null, 2));
             await writable.close();
+
+            // Save individual character files
+            for (const [id, profile] of this.state.characterProfiles.entries()) {
+                await this.saveCharacter(id, profile);
+            }
 
             const now = new Date();
             const timeStr = now.getHours().toString().padStart(2, '0') + ":" +
@@ -254,7 +308,7 @@ export class ScriptEditorService {
                         return null;
                     }).filter((id: any) => id !== null)
             })),
-            characters: Array.from(this.state.characterProfiles.values()).map(c => ({
+            characters: Array.from(this.state.characterProfiles.values() as any[]).map((c: any) => ({
                 ...c,
                 id: c.id.trim()
             }))
@@ -297,10 +351,73 @@ export class ScriptEditorService {
 
     public showCharacterProfile(id: string) {
         if (!this.state.characterProfiles.has(id)) {
-            this.state.characterProfiles.set(id, { id, name: id, favor: {}, info: [] });
+            const newProfile = { id, name: id, favor: {}, info: [], soul: "" };
+            this.state.characterProfiles.set(id, newProfile);
         }
         this.state.profile = this.state.characterProfiles.get(id);
         this.state.profileId = id;
+        this.state.node = null;
+    }
+
+    private async saveCharacter(id: string, profile: any) {
+        if (!this.directoryHandle) return;
+        try {
+            const assetsHandle = await this.directoryHandle.getDirectoryHandle("assets", { create: true });
+            const characterRoot = await assetsHandle.getDirectoryHandle("character", { create: true });
+            const charDir = await characterRoot.getDirectoryHandle(id, { create: true });
+
+            // 1. Save profile.json (Everything except soul)
+            const { soul, ...rest } = profile;
+            const profileFile = await charDir.getFileHandle("profile.json", { create: true });
+            const pWritable = await profileFile.createWritable();
+            await pWritable.write(JSON.stringify(rest, null, 2));
+            await pWritable.close();
+
+            // 2. Save soul.md (Soul description)
+            const soulFile = await charDir.getFileHandle("soul.md", { create: true });
+            const sWritable = await soulFile.createWritable();
+            await sWritable.write(soul || "");
+            await sWritable.close();
+        } catch (e) {
+            console.error(`Save character ${id} failed`, e);
+        }
+    }
+
+    private async loadCharacters() {
+        if (!this.directoryHandle) return;
+        try {
+            const assetsHandle = await this.directoryHandle.getDirectoryHandle("assets", { create: true });
+            const characterRoot = await assetsHandle.getDirectoryHandle("character", { create: true });
+            
+            const foundIds: string[] = [];
+            for await (const entry of (characterRoot as any).values()) {
+                if (entry.kind === 'directory') {
+                    const id = entry.name;
+                    foundIds.push(id);
+                    
+                    try {
+                        const profileFile = await entry.getFileHandle("profile.json");
+                        const pFile = await profileFile.getFile();
+                        const profile = JSON.parse(await pFile.text());
+                        
+                        // Load soul.md if exists
+                        let soulContent = "";
+                        try {
+                            const soulFile = await entry.getFileHandle("soul.md");
+                            const sFile = await soulFile.getFile();
+                            soulContent = await sFile.text();
+                        } catch(e) {}
+                        
+                        this.state.characterProfiles.set(id, { ...profile, soul: soulContent });
+                    } catch (e) {
+                         console.warn(`Load profile for ${id} failed`, e);
+                    }
+                }
+            }
+            this.state.characterIds = foundIds;
+        } catch (e) {
+            console.warn("Load characters failed", e);
+        }
     }
 
     /**
@@ -320,7 +437,8 @@ export class ScriptEditorService {
                 }],
                 triggers: [],
                 mount: [],
-                unMount: []
+                unMount: [],
+                tags: []
             },
             type: 'default'
         };
@@ -367,6 +485,26 @@ export class ScriptEditorService {
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => reject(req.error);
         });
+    }
+
+    public async playPreview(nodeId?: string) {
+        // 1. Ensure bundle is up to date
+        await this.publishBundle();
+        
+        // 2. Set current preview URL with optional startNode
+        let url = "http://localhost:5173/?skipHome=true";
+        if (nodeId) {
+            url += `&startNode=${nodeId}`;
+        }
+        
+        // Force reload even if URL same or just changed query param
+        this.state.previewUrl = ""; 
+        setTimeout(() => {
+            this.state.previewUrl = url;
+            this.state.showPreview = true;
+        }, 50);
+
+        this.state.statusText = nodeId ? `从节点 [${nodeId}] 预览` : "正在启动预览";
     }
 
     private openDB(): Promise<IDBDatabase> {

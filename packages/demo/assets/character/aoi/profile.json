@@ -1,0 +1,18 @@
+{
+  "id": "aoi",
+  "name": "aoi",
+  "favor": {},
+  "isProtagonist": false,
+  "height": 165,
+  "weight": 50,
+  "age": 18,
+  "birthDate": "01-01",
+  "bloodType": "O",
+  "info": [
+    {
+      "text": "在成为那场绀碧色极夜之前，葵曾是“旧都灵”最后一名情感测绘员。在那场波及全城的“热寂坍缩”中，",
+      "unlockRequirement": []
+    }
+  ],
+  "phoneNumber": ""
+}

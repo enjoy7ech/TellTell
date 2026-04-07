@@ -4,28 +4,18 @@ import FrameEditor from './FrameEditor.vue';
 import { Close, ArrowDown } from '@element-plus/icons-vue';
 
 const props = defineProps<{
-    node: any;
-    index: number;
-    x: number;
-    y: number;
-    characterIds: string[];
-    characterProfiles: Map<string, any>;
-    portraitHandles: Map<string, Map<string, any>>;
-    portraitUrls: Map<string, string>;
-    sceneHandles: Map<string, any>;
-    sceneUrls: Map<string, string>;
-    nodeIds: string[];
-    getImageUrl: (handle: any) => Promise<string>;
-    preloadPortraits: (charId: string) => void;
+    state: any;
+    onClose?: () => void;
+    onChange?: () => void;
 }>();
 
 const emit = defineEmits(['close', 'change']);
 
-const frame = computed(() => props.node?.data?.display[props.index]);
+const frame = computed(() => props.state.popover.node?.data?.display[props.state.popover.index]);
 
 // Drag Logic
-const localX = ref(props.x);
-const localY = ref(props.y);
+const localX = ref(props.state.popover.x);
+const localY = ref(props.state.popover.y);
 const isDragging = ref(false);
 const startX = ref(0);
 const startY = ref(0);
@@ -78,7 +68,7 @@ onUnmounted(() => {
         <div class="popover-header" @mousedown="onMouseDown">
             <div class="header-left">
                 <el-icon class="expand-icon"><ArrowDown /></el-icon>
-                <span class="frame-title">配置分镜 #{{ index + 1 }}</span>
+                <span class="frame-title">配置分镜 #{{ props.state.popover.index + 1 }}</span>
                 <span class="drag-hint">(可拖拽)</span>
             </div>
             <el-button class="close-btn" circle :icon="Close" @click="handleClose" />
@@ -87,15 +77,7 @@ onUnmounted(() => {
         <div class="popover-body">
             <FrameEditor 
                 v-model="frame"
-                :character-ids="characterIds"
-                :character-profiles="characterProfiles"
-                :portrait-handles="portraitHandles"
-                :portrait-urls="portraitUrls"
-                :scene-handles="sceneHandles"
-                :scene-urls="sceneUrls"
-                :node-ids="nodeIds"
-                :get-image-url="getImageUrl"
-                :preload-portraits="preloadPortraits"
+                :state="props.state"
                 @change="handleDataChange"
             />
         </div>

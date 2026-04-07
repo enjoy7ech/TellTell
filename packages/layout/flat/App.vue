@@ -19,6 +19,16 @@ const frame = reactive({
 
 // --- 生命周期与事件监听 ---
 onMounted(() => {
+    // Check if we should skip the home screen (e.g. preview mode)
+    const urlParams = new URLSearchParams(window.location.search);
+    const startNode = urlParams.get('startNode');
+    const skipHome = urlParams.get('skipHome') === 'true';
+
+    if (startNode || skipHome) {
+        showMenu.value = false;
+        showGameLayer.value = true;
+    }
+
     // 1. 监听初始化
     props.engine.on('initialized', () => {
         isInitialized.value = true;

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
+    "@google/genai": "^1.48.0",
     "@popperjs/core": "^2.11.8",
     "@telltell/core": "workspace:*",
     "element-plus": "^2.13.6",

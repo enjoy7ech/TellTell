@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, markRaw } from 'vue';
+import { onMounted, reactive, markRaw, provide, computed } from 'vue';
 import Sidebar from './components/Sidebar.vue';
 import Toolbar from './components/Toolbar.vue';
 import GraphCanvas from './components/GraphCanvas.vue';
@@ -7,6 +7,7 @@ import PropertyPanel from './components/PropertyPanel.vue';
 import FramePopover from './components/FramePopover.vue';
 import RelationshipGraph from './components/RelationshipGraph.vue';
 import { ScriptEditorService } from './services/ScriptEditorService';
+import { GeminiService } from './services/GeminiService';
 import { Connection, View, RefreshRight, SemiSelect } from '@element-plus/icons-vue';
 
 // Global Reactive State
@@ -23,7 +24,6 @@ const state = reactive({
     portraitUrls: reactive(new Map<string, string>()),
     sceneUrls: reactive(new Map<string, string>()),
     
-    folderGroups: new Map<string, any[]>(),
     directoryName: "未选择任何文件夹",
     statusText: "就绪",
     hasDirectory: false,
@@ -38,22 +38,34 @@ const state = reactive({
     
     // Popover State
     popover: {
-        show: false,
+        visible: false,
         node: null as any,
         index: -1,
         x: 0,
         y: 0
     },
     
+    // Gemini AI
+    geminiApiKey: localStorage.getItem("gemini_api_key") || "",
+    geminiModel: localStorage.getItem("gemini_model") || "gemini-2.5-flash",
+    geminiImageModel: localStorage.getItem("gemini_image_model") || "gemini-3-pro-image-preview",
+    geminiService: null as any,
+    
     // Services
     editorService: null as any,
 });
 
-
+// Provide nodes to all nested components to avoid prop drilling
+provide('all-nodes', computed(() => state.nodes));
+provide('state', state);
 
 onMounted(async () => {
     const service = new ScriptEditorService(state);
     state.editorService = markRaw(service);
+    
+    if (state.geminiApiKey) {
+        state.geminiService = markRaw(new GeminiService(state.geminiApiKey, state.geminiModel, state.geminiImageModel));
+    }
 });
 
 function handleSave() {
@@ -72,10 +84,6 @@ function handlePlay() {
     state.editorService?.playPreview();
 }
 
-function handleAddFolder() {
-    state.editorService?.addFolder();
-}
-
 </script>
 
 <template>
@@ -85,13 +93,11 @@ function handleAddFolder() {
             :character-ids="state.characterIds"
             :character-profiles="state.characterProfiles"
             :portrait-urls="state.portraitUrls"
-            :folder-groups="state.folderGroups"
             :directory-name="state.directoryName"
             :status-text="state.statusText"
             @select-node="(node) => state.editorService.selectNode(node)"
             @edit-profile="(id) => state.editorService.showCharacterProfile(id)"
             @open-dir="handleOpenDir"
-            @add-folder="handleAddFolder"
             @save="handleSave"
             @publish="handlePublish"
             @play="handlePlay"
@@ -101,6 +107,7 @@ function handleAddFolder() {
         <main class="editor-container">
             <Toolbar 
                 :status-text="state.statusText"
+                :directory-name="state.directoryName"
                 @save="handleSave"
                 @publish="handlePublish"
                 @play="handlePlay"
@@ -149,39 +156,15 @@ function handleAddFolder() {
         <aside class="property-panel" :class="{ hidden: !state.node && !state.profile }">
              <PropertyPanel 
                 v-if="state.node || state.profile"
-                :key="state.node?.id || state.profile?.id"
-                :node="state.node"
-                :profile="state.profile"
-                :profile-id="state.profileId"
-                :character-ids="state.characterIds"
-                :portrait-handles="state.portraitHandles"
-                :portrait-urls="state.portraitUrls"
-                :scene-handles="state.sceneHandles"
-                :scene-urls="state.sceneUrls"
-                :character-profiles="state.characterProfiles"
-                :get-image-url="state.editorService?.getImageUrl"
+                :state="state"
                 :on-save="handleSave"
-                :all-node-ids="state.editorService?.getAllNodeIds()"
-                :auto-expand-index="state.autoExpandFrameIndex"
             />
         </aside>
 
         <!-- Modals -->
-        <FramePopover v-if="state.popover.show"
-            :node="state.popover.node"
-            :index="state.popover.index"
-            :x="state.popover.x"
-            :y="state.popover.y"
-            :character-ids="state.characterIds"
-            :character-profiles="state.characterProfiles"
-            :portrait-handles="state.portraitHandles"
-            :portrait-urls="state.portraitUrls"
-            :scene-handles="state.sceneHandles"
-            :scene-urls="state.sceneUrls"
-            :node-ids="state.editorService?.getAllNodeIds()"
-            :get-image-url="state.editorService?.getImageUrl"
-            :preload-portraits="(id: string) => state.editorService?.preloadPortraits(id, state.portraitUrls)"
-            @close="state.popover.show = false"
+        <FramePopover v-if="state.popover.visible"
+            :state="state"
+            @close="state.popover.visible = false"
             @change="handleSave"
         />
 

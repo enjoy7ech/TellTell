@@ -100,15 +100,15 @@ const getThumb = (charId: string) => {
 .char-meta-id {
     font-size: 0.65rem;
     color: #3b82f6;
-    font-weight: 800;
+    font-weight: 400; /* Normalized */
     font-family: 'JetBrains Mono', monospace;
     opacity: 0.8;
 }
 
 .char-name-display {
     font-size: 0.9rem;
-    font-weight: 800;
-    color: #1e293b; /* Pure contrast blackish */
+    font-weight: 500; /* Slight medium for visual balance */
+    color: #1e293b;
     margin-top: 1px;
     white-space: nowrap;
     overflow: hidden;
@@ -122,7 +122,7 @@ const getThumb = (charId: string) => {
     background: #f1f5f9;
     padding: 3px 8px;
     border-radius: 12px;
-    font-weight: 900;
+    font-weight: 500;
     text-transform: uppercase;
 }
 

@@ -1,21 +1,20 @@
 <script setup lang="ts">
+import { computed, inject } from 'vue';
 import CharacterSelector from './CharacterSelector.vue';
 import StoryNodeSelect from './StoryNodeSelect.vue';
 import GlobalMetadata from '@telltell/core/meta/meta.json';
-import { computed } from 'vue';
 import { Plus, Delete } from '@element-plus/icons-vue';
 
 const props = defineProps<{
     title: string;
     modelValue: any[];
-    characterIds: string[];
-    characterProfiles: Map<string, any>;
-    portraitHandles: Map<string, Map<string, any>>;
-    portraitUrls: Map<string, string>;
-    allNodeIds?: string[];
+    state: any;
     allowedType?: 'action' | 'judge'; // Filter by function type
     allowedModules?: string[]; // Optional whitelist for modules
 }>();
+
+const allNodes = inject<any>('all-nodes');
+const allNodeIds = computed(() => props.state.editorService?.getAllNodeIds() || []);
 
 const emit = defineEmits(['update:modelValue']);
 
@@ -106,6 +105,25 @@ const componentMap: any = {
     "el-select": "el-select",
     "el-input": "el-input"
 };
+
+function getFirstFrameText(nodeId: string) {
+    if (!allNodes?.value || allNodes.value.length === 0) {
+        return '--- (无节点数据) ---';
+    }
+    const node = allNodes.value.find((n: any) => {
+        const id = (n.data?.id || n.id || "").toString().trim();
+        return id === nodeId.toString().trim();
+    });
+    
+    if (!node) return '未找到节点 (' + nodeId + ')';
+    
+    const display = node.data?.display || [];
+    if (display.length === 0) return '节点内尚无分镜';
+    
+    const firstFrame = display[0];
+    const text = (firstFrame.dialog?.text || "").trim() || (firstFrame.screen?.text || "").trim();
+    return text || '(该分镜无对白内容)';
+}
 </script>
 
 <template>
@@ -147,15 +165,32 @@ const componentMap: any = {
                                 :is="componentMap[pInfo.type] || 'el-input'" 
                                 v-model="act.params[pIdx]"
                                 v-bind="pInfo.props"
-                                :character-ids="characterIds"
-                                :character-profiles="characterProfiles"
-                                :portrait-urls="portraitUrls"
-                                :portrait-handles="portraitHandles"
+                                :character-ids="props.state.characterIds"
+                                :character-profiles="props.state.characterProfiles"
+                                :portrait-urls="props.state.portraitUrls"
+                                :portrait-handles="props.state.portraitHandles"
                                 :all-node-ids="allNodeIds"
+                                :all-nodes="allNodes"
                                 :placeholder="pInfo.label"
                             >
                                 <template v-if="pInfo.props?.isNodeSelector">
-                                    <el-option v-for="nid in allNodeIds" :key="nid" :label="nid" :value="nid" />
+                                    <el-option v-for="nid in allNodeIds" :key="nid" :label="nid" :value="nid">
+                                        <el-popover
+                                            placement="right"
+                                            :width="260"
+                                            trigger="hover"
+                                            popper-class="story-node-preview-popover"
+                                            :teleported="true"
+                                        >
+                                            <template #reference>
+                                                <span>{{ nid }}</span>
+                                            </template>
+                                            <div class="preview-box">
+                                                <div class="preview-tag">Story Preview</div>
+                                                <div class="preview-main-text">{{ getFirstFrameText(nid) }}</div>
+                                            </div>
+                                        </el-popover>
+                                    </el-option>
                                 </template>
                             </component>
                         </div>
@@ -165,6 +200,44 @@ const componentMap: any = {
         </div>
     </div>
 </template>
+
+<style>
+/* Global styles for popper content since it is detached from component scope */
+.story-node-preview-popover {
+    padding: 12px !important;
+    border-radius: 8px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    background: #ffffff !important;
+    z-index: 9999 !important;
+}
+
+.preview-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.preview-tag {
+    font-size: 9px;
+    font-weight: 800;
+    color: #3b82f6;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 4px;
+}
+
+.preview-main-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #1e293b;
+    font-weight: 500;
+    word-break: break-all;
+    white-space: pre-wrap;
+    font-family: inherit;
+}
+</style>
 
 <style scoped>
 .action-list-editor {

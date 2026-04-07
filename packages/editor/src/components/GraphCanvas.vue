@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, reactive } from 'vue';
-import { Plus, Refresh } from '@element-plus/icons-vue';
+import { Plus, Refresh, Delete } from '@element-plus/icons-vue';
 
 const props = defineProps<{
     state: any;
@@ -24,13 +24,13 @@ const interaction = reactive({
     connectionStart: null as any,
     mousePos: { x: 0, y: 0 },
     draggedNode: null as any,
-    selectedNode: null as any,
     hoveredNode: null as any,
-    hoveredEdge: null as any, // { source, target, type: 'choice' | 'edge', index? }
-    hoveredFrame: null as any, // { node, index }
-    clickedTarget: null as any, // { type: 'node' | 'frame', node, frameIdx? }
+    hoveredEdge: null as any, 
+    hoveredFrame: null as any, 
+    hoveredPlayButton: null as any, // Node being hovered on its play button
+    clickedTarget: null as any, 
     mouseDown: false,
-    dragStarted: false // Track if we actually moved significantly
+    dragStarted: false 
 });
 
 // Helper: Distance from point p to cubic bezier
@@ -52,7 +52,9 @@ const contextMenu = reactive({
     show: false,
     x: 0,
     y: 0,
-    canvasPos: { x: 0, y: 0 }
+    canvasPos: { x: 0, y: 0 },
+    targetNode: null as any,
+    targetEdge: null as any
 });
 
 // Canvas Rendering constants
@@ -178,8 +180,23 @@ function draw() {
 
         ctx.font = 'bold 11px Inter, system-ui, sans-serif';
         ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
-        ctx.fillText(node.data?.id || node.id, headerRect.x + headerRect.w/2, headerRect.y + 16);
+        ctx.textAlign = 'left';
+        ctx.fillText(node.data?.id || node.id, headerRect.x + 10, headerRect.y + 16);
+        
+        // Play Button (Triangle)
+        const playBtnX = headerRect.x + headerRect.w - 18;
+        const playBtnY = headerRect.y + 6;
+        const playBtnSize = 12;
+        const isPlayHovered = interaction.hoveredPlayButton?.id === node.id;
+        
+        ctx.fillStyle = isPlayHovered ? '#ffffff' : 'rgba(255,255,255,0.7)';
+        ctx.beginPath();
+        ctx.moveTo(playBtnX, playBtnY);
+        ctx.lineTo(playBtnX + playBtnSize, playBtnY + playBtnSize/2);
+        ctx.lineTo(playBtnX, playBtnY + playBtnSize);
+        ctx.closePath();
+        ctx.fill();
+
         ctx.textAlign = 'left';
 
         // Frame Track
@@ -291,8 +308,10 @@ function draw() {
                 if (targetNode) {
                     const fx = n.position.x + PADDING + (fIdx % 4) * (FRAME_SQUARE_SIZE + FRAME_GAP);
                     const fy = n.position.y + NODE_HEADER_HEIGHT + 20 + PADDING + Math.floor(fIdx / 4) * (FRAME_SQUARE_SIZE + FRAME_GAP);
-                    const startX = fx + FRAME_SQUARE_SIZE / 2;
-                    const startY = fy + FRAME_SQUARE_SIZE / 2;
+                    const dc = cIdx % 2;
+                    const dr = Math.floor(cIdx / 2);
+                    const startX = fx + 6 + dc * 10;
+                    const startY = fy + 6 + dr * 10;
                     const th = getNodeHeight(targetNode);
                     const endX = targetNode.position.x;
                     const endY = targetNode.position.y + th / 2;
@@ -306,6 +325,7 @@ function draw() {
                     ctx.strokeStyle = isHovered ? COLORS.nodeSelected : COLORS.edge;
                     ctx.lineWidth = isHovered ? 2.5 : 1.0;
                     ctx.setLineDash([2, 3]);
+                    ctx.lineDashOffset = -(Date.now() / 30) % 5;
                     const cp1x = startX + (endX - startX) / 2;
                     const cp2x = startX + (endX - startX) / 2;
                     ctx.moveTo(startX, startY);
@@ -390,6 +410,18 @@ function onMouseDown(e: MouseEvent) {
         }
     }
 
+    // 1.5 Check for Play Button Hit
+    for (const n of [...props.state.nodes].reverse()) {
+        const playBtnX = n.position.x + PADDING/2 + NODE_WIDTH - PADDING - 22;
+        const playBtnY = n.position.y + PADDING/2 + 4;
+        if (p.x >= playBtnX && p.x <= playBtnX + 25 && p.y >= playBtnY && p.y <= playBtnY + 25) {
+            if (props.state.editorService) {
+                props.state.editorService.playPreview(n.data?.id || n.id);
+            }
+            return;
+        }
+    }
+
     // 2. Check for Nodes (Body & Frames)
     const hit = [...props.state.nodes].reverse().find(n => isPointInNode(p.x, p.y, n));
     
@@ -467,6 +499,17 @@ function onMouseMove(e: MouseEvent) {
         }
     }
 
+    // Play Button Hover Detection
+    let hPlay = null;
+    for (const n of props.state.nodes) {
+        const playBtnX = n.position.x + PADDING/2 + NODE_WIDTH - PADDING - 22;
+        const playBtnY = n.position.y + PADDING/2 + 4;
+        if (worldArr.x >= playBtnX && worldArr.x <= playBtnX + 25 && worldArr.y >= playBtnY && worldArr.y <= playBtnY + 25) {
+            hPlay = n; break;
+        }
+    }
+    interaction.hoveredPlayButton = hPlay;
+
     // Edge Hover Detection (Last priority)
     let foundEdge = null;
     if (!interaction.hoveredNode && !onHandle && !onInputHandle) {
@@ -487,7 +530,6 @@ function onMouseMove(e: MouseEvent) {
         // 2. Choice Edges
         if (!foundEdge) {
             for (const n of props.state.nodes) {
-                const height = getNodeHeight(n);
                 const frames = n.data?.display || [];
                 for (let fIdx = 0; fIdx < frames.length; fIdx++) {
                     const choices = frames[fIdx].choice || [];
@@ -496,8 +538,12 @@ function onMouseMove(e: MouseEvent) {
                         if (!targetId) continue;
                         const targetNode = props.state.nodes.find((tn: any) => tn.id === targetId || (tn.data && tn.data.id === targetId));
                         if (!targetNode) continue;
-                        const startX = n.position.x + NODE_WIDTH;
-                        const startY = n.position.y + height/2;
+                        const fx = n.position.x + PADDING + (fIdx % 4) * (FRAME_SQUARE_SIZE + FRAME_GAP);
+                        const fy = n.position.y + NODE_HEADER_HEIGHT + 20 + PADDING + Math.floor(fIdx / 4) * (FRAME_SQUARE_SIZE + FRAME_GAP);
+                        const dc = cIdx % 2;
+                        const dr = Math.floor(cIdx / 2);
+                        const startX = fx + 6 + dc * 10;
+                        const startY = fy + 6 + dr * 10;
                         const tH = getNodeHeight(targetNode);
                         const endX = targetNode.position.x;
                         const endY = targetNode.position.y + tH/2;
@@ -520,6 +566,7 @@ function onMouseMove(e: MouseEvent) {
         else if (onHandle || onInputHandle) canvasRef.value.style.cursor = 'pointer';
         else if (interaction.hoveredNode) canvasRef.value.style.cursor = 'move';
         else if (interaction.hoveredEdge) canvasRef.value.style.cursor = 'pointer';
+        else if (interaction.hoveredPlayButton) canvasRef.value.style.cursor = 'pointer';
         else canvasRef.value.style.cursor = 'default';
     }
 
@@ -630,10 +677,21 @@ function onContextMenu(e: MouseEvent) {
     const y = e.clientY - rect.top;
     const world = fromScreen(x, y);
 
+    // Context-aware detection
+    const hitNode = [...props.state.nodes].reverse().find(n => isPointInNode(world.x, world.y, n));
+    
     contextMenu.show = true;
     contextMenu.x = e.clientX;
     contextMenu.y = e.clientY;
     contextMenu.canvasPos = world;
+    contextMenu.targetNode = hitNode || null;
+    
+    // Also detect edge for context menu
+    if (!hitNode) {
+        contextMenu.targetEdge = interaction.hoveredEdge; // Use existing hover detection
+    } else {
+        contextMenu.targetEdge = null;
+    }
 }
 
 function handleAddNode() {
@@ -641,6 +699,35 @@ function handleAddNode() {
         props.state.editorService.addNode(contextMenu.canvasPos);
     }
     contextMenu.show = false;
+}
+
+function handleDeleteFromMenu() {
+    if (contextMenu.targetNode && props.state.editorService) {
+        props.state.editorService.deleteNode(contextMenu.targetNode.id);
+    } else if (contextMenu.targetEdge) {
+        if (contextMenu.targetEdge.type === 'edge') {
+            props.state.edges = props.state.edges.filter((e: any) => e.id !== contextMenu.targetEdge.id);
+        } else if (contextMenu.targetEdge.type === 'choice') {
+            const n = props.state.nodes.find((node: any) => node.id === contextMenu.targetEdge.source);
+            if (n && n.data?.display?.[contextMenu.targetEdge.frameIdx]?.choice?.[contextMenu.targetEdge.choiceIdx]) {
+                n.data.display[contextMenu.targetEdge.frameIdx].choice[contextMenu.targetEdge.choiceIdx].target = "";
+            }
+        }
+        props.state.editorService?.triggerAutoSave();
+    }
+    contextMenu.show = false;
+}
+
+function handleGlobalKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Prevent deleting when typing in inputs
+        if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+        
+        if (props.state.node && props.state.editorService) {
+            props.state.editorService.deleteNode(props.state.node.id);
+            props.state.node = null;
+        }
+    }
 }
 
 const resizeCanvas = () => {
@@ -655,6 +742,7 @@ let resizeObserver: ResizeObserver | null = null;
 onMounted(() => {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('keydown', handleGlobalKeyDown);
     
     // Auto-resize when container changes (e.g. side panel toggled)
     if (containerRef.value) {
@@ -669,6 +757,7 @@ onMounted(() => {
 
 onUnmounted(() => {
     window.removeEventListener('resize', resizeCanvas);
+    window.removeEventListener('keydown', handleGlobalKeyDown);
     if (resizeObserver) {
         resizeObserver.disconnect();
     }
@@ -693,7 +782,11 @@ onUnmounted(() => {
             class="context-menu" 
             :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
         >
-            <div class="menu-item" @click="handleAddNode">
+            <div v-if="contextMenu.targetNode || contextMenu.targetEdge" class="menu-item delete" @click="handleDeleteFromMenu">
+                <el-icon><Delete /></el-icon>
+                <span>删除此{{ contextMenu.targetNode ? '节点' : '连线' }}</span>
+            </div>
+            <div v-if="!contextMenu.targetNode && !contextMenu.targetEdge" class="menu-item" @click="handleAddNode">
                 <el-icon><Plus /></el-icon>
                 <span>新建剧情节点</span>
             </div>

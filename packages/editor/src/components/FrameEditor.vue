@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { UserFilled, ChatLineRound, Connection, MagicStick } from '@element-plus/icons-vue';
 import CharacterSelector from './CharacterSelector.vue';
 import PortraitSelector from './PortraitSelector.vue';
 import ChoiceListEditor from './ChoiceListEditor.vue';
@@ -7,19 +9,35 @@ import SceneSelector from './SceneSelector.vue';
 
 const props = defineProps<{
     modelValue: any;
-    characterIds: string[];
-    characterProfiles: Map<string, any>;
-    portraitHandles: Map<string, Map<string, any>>;
-    portraitUrls: Map<string, string>;
-    sceneHandles: Map<string, any>;
-    sceneUrls: Map<string, string>;
-    nodeIds: string[];
+    state: any;
 }>();
 
 const emit = defineEmits(['update:modelValue', 'change']);
+const isAILoading = ref(false);
 
 function handleChange() {
     emit('change');
+}
+
+async function generateAIContent() {
+    if (!props.state.geminiService) {
+        alert("请在侧边栏配置 Gemini API Key");
+        return;
+    }
+
+    isAILoading.value = true;
+    try {
+        const dialog = await props.state.geminiService.generateDialog({
+            charName: props.modelValue.dialog.char,
+            plot: "当前正在编写剧本中...",
+            lastDialogs: [],
+            userDraft: props.modelValue.dialog.text // PASS CURRENT INPUT HERE
+        });
+        props.modelValue.dialog.text = dialog;
+        emit('change');
+    } finally {
+        isAILoading.value = false;
+    }
 }
 </script>
 
@@ -32,16 +50,16 @@ function handleChange() {
             <div class="dual-selector">
                 <CharacterSelector 
                     v-model="modelValue.dialog.char"
-                    :character-ids="characterIds"
-                    :character-profiles="characterProfiles"
-                    :portrait-handles="portraitHandles"
-                    :portrait-urls="portraitUrls"
+                    :character-ids="props.state.characterIds"
+                    :character-profiles="props.state.characterProfiles"
+                    :portrait-handles="props.state.portraitHandles"
+                    :portrait-urls="props.state.portraitUrls"
                 />
                 <PortraitSelector 
                     v-model="modelValue.dialog.pic"
                     :char-id="modelValue.dialog.char"
-                    :portrait-urls="portraitUrls"
-                    :portrait-handles="portraitHandles"
+                    :portrait-urls="props.state.portraitUrls"
+                    :portrait-handles="props.state.portraitHandles"
                     placeholder="表情立绘"
                 />
             </div>
@@ -51,14 +69,26 @@ function handleChange() {
             <div class="label-row">
                 <el-icon><ChatLineRound /></el-icon> 对话文本 (DIALOG)
             </div>
-            <el-input 
-                v-model="modelValue.dialog.text" 
-                type="textarea" 
-                :rows="4" 
-                placeholder="请输入剧情文本..." 
-                class="dialog-input"
-                size="small"
-            />
+            <div class="dialog-input-wrapper">
+                <el-input 
+                    v-model="modelValue.dialog.text" 
+                    type="textarea" 
+                    :rows="4" 
+                    placeholder="请输入剧情文本..." 
+                    class="dialog-input"
+                    size="small"
+                />
+                <el-tooltip :content="props.state.geminiService ? '使用 Gemini 生成建议台词' : '未配置 Gemini API Key'" placement="left">
+                    <el-button 
+                        class="ai-gen-btn" 
+                        :class="{ loading: isAILoading }"
+                        :icon="MagicStick" 
+                        circle 
+                        size="small"
+                        @click="generateAIContent"
+                    />
+                </el-tooltip>
+            </div>
         </div>
 
         <div class="prop-group-grid" style="margin-top: 20px;">
@@ -66,8 +96,8 @@ function handleChange() {
                 <div class="label-row">背景与悬浮文本 (SCENE)</div>
                 <SceneSelector 
                     v-model="modelValue.screen.pic" 
-                    :scene-urls="sceneUrls"
-                    :scene-handles="sceneHandles"
+                    :scene-urls="props.state.sceneUrls"
+                    :scene-handles="props.state.sceneHandles"
                     placeholder="选择背景图..."
                     style="margin-bottom: 8px;"
                 />
@@ -86,37 +116,40 @@ function handleChange() {
 
         <el-input type="textarea" :rows="3" v-model="modelValue.screen.text" placeholder="场景悬浮文本..." size="small" />
 
-
-        <div class="frame-logic-group" style="margin-top: 32px;">
-            <div class="tiny-title">互动选项 (CHOICES)</div>
+        <div class="prop-group" style="margin-top: 16px;">
+             <div class="label-row">
+                <el-icon><Connection /></el-icon> 选项分支 (BRANCHES)
+            </div>
             <ChoiceListEditor 
-                v-model="modelValue.choice" 
-                :node-ids="nodeIds"
-                :character-ids="characterIds"
-                :character-profiles="characterProfiles"
-                :portrait-handles="portraitHandles"
-                :portrait-urls="portraitUrls"
+                v-model="modelValue.choice"
+                :state="props.state"
+                @change="handleChange"
             />
         </div>
 
-        <div class="frame-logic-group" style="margin-top: 32px;">
+        <div class="prop-group" style="margin-top: 16px;">
+            <div class="label-row">
+                <el-icon><Connection /></el-icon> 分镜前置/进入逻辑 (PRE)
+            </div>
             <ActionListEditor 
-                title="进入分镜前 (PRE)" 
+                title="进入分镜前 (PRE)"
                 v-model="modelValue.pre" 
                 allowed-type="action"
-                :character-ids="characterIds"
-                :character-profiles="characterProfiles"
-                :portrait-handles="portraitHandles"
-                :portrait-urls="portraitUrls"
+                :state="props.state"
+                @change="handleChange"
             />
+        </div>
+
+        <div class="prop-group" style="margin-top: 16px;">
+            <div class="label-row">
+                <el-icon><Connection /></el-icon> 分镜后置/离开逻辑 (POST)
+            </div>
             <ActionListEditor 
-                title="离开分镜后 (POST)" 
+                title="离开分镜后 (POST)"
                 v-model="modelValue.post" 
-                allowed-type="action"
-                :character-ids="characterIds"
-                :character-profiles="characterProfiles"
-                :portrait-handles="portraitHandles"
-                :portrait-urls="portraitUrls"
+                allowed-type="action" 
+                :state="props.state"
+                @change="handleChange"
             />
         </div>
     </div>
@@ -161,6 +194,39 @@ function handleChange() {
     text-transform: uppercase;
     border-bottom: 1px solid #f1f5f9;
     padding-bottom: 8px;
+}
+
+.dialog-input-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.ai-gen-btn {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
+    border: none;
+    color: white;
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 10;
+}
+
+.ai-gen-btn:hover {
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 6px 16px rgba(168, 85, 247, 0.6);
+}
+
+.ai-gen-btn.loading {
+    animation: sparkle 1.5s infinite linear;
+}
+
+@keyframes sparkle {
+    0% { filter: hue-rotate(0deg) brightness(1); }
+    50% { filter: hue-rotate(180deg) brightness(1.5); }
+    100% { filter: hue-rotate(360deg) brightness(1); }
 }
 
 :deep(.el-input__inner), :deep(.el-textarea__inner) {

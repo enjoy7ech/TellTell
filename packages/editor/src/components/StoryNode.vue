@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Handle, Position } from '@vue-flow/core';
+import { VideoPlay } from '@element-plus/icons-vue';
 import { computed } from 'vue';
 
 const props = defineProps<{
@@ -7,9 +8,14 @@ const props = defineProps<{
     selected?: boolean;
 }>();
 
-const emit = defineEmits(['open-popover']);
+const emit = defineEmits(['open-popover', 'play-node']);
 
 const frames = computed(() => props.data.display || []);
+
+function handlePlay(e: MouseEvent) {
+    e.stopPropagation();
+    emit('play-node', props.data.id || props.data.label);
+}
 </script>
 
 <template>
@@ -17,7 +23,14 @@ const frames = computed(() => props.data.display || []);
         <Handle type="target" :position="Position.Left" class="node-input-handle" />
         
         <div class="node-body">
-            <div class="node-id-chip">{{ data.id }}</div>
+            <div class="node-header">
+                <div class="node-id-chip">{{ data.id }}</div>
+                <el-tooltip content="从该节点开始预览 (PLAY)" placement="top">
+                    <div class="play-btn-overlay" @click="handlePlay">
+                        <el-icon><VideoPlay /></el-icon>
+                    </div>
+                </el-tooltip>
+            </div>
             
             <!-- Frame Track with Label -->
             <div class="frame-track-wrapper" v-if="frames.length > 0">
@@ -75,6 +88,15 @@ const frames = computed(() => props.data.display || []);
     border-width: 2px;
 }
 
+.node-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    position: relative;
+    padding-right: 4px;
+}
+
 .node-id-chip {
     background: #f8fafc;
     padding: 2px 10px;
@@ -84,9 +106,33 @@ const frames = computed(() => props.data.display || []);
     color: #475569;
     text-align: center;
     border: 1px solid #f1f5f9;
-    margin-bottom: 6px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    flex: 1;
+    margin-right: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.play-btn-overlay {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #eff6ff;
+    color: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #dbeafe;
+}
+
+.play-btn-overlay:hover {
+    background: #3b82f6;
+    color: #ffffff;
+    transform: scale(1.1);
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
 }
 
 .frame-track-wrapper {

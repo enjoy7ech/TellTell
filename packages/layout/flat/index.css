@@ -188,6 +188,7 @@
   position: relative;
   margin-left: auto;
   pointer-events: none;
+  flex-shrink: 0;
 }
 
 .char-portrait {

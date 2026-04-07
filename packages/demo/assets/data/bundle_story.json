@@ -73,10 +73,31 @@
           },
           "dialog": {
             "char": "haruno",
-            "text": "我也喜欢你！",
-            "pic": "happy.webp"
+            "text": "「这里的转折，如果是我的话，可能会更想听到你亲口说出那句话哦？呐，别发愣了，快点把那一页翻过去吧——属于我们的故事，才刚刚开始呢。」",
+            "pic": "accept-love.webp"
           },
           "choice": []
+        },
+        {
+          "screen": {
+            "text": "三十年后"
+          },
+          "dialog": {
+            "text": "",
+            "pic": ""
+          },
+          "choice": [],
+          "transition": "blur",
+          "pre": [],
+          "post": [
+            {
+              "module": "Engine",
+              "func": "startStoryNode",
+              "params": [
+                "人生结束"
+              ]
+            }
+          ]
         }
       ],
       "triggers": [
@@ -115,6 +136,7 @@
       ],
       "mount": [],
       "unMount": [],
+      "tags": [],
       "postNodes": []
     }
   ],
@@ -129,9 +151,14 @@
       "age": 18,
       "birthDate": "01-01",
       "bloodType": "O",
-      "info": [],
+      "info": [
+        {
+          "text": "在成为那场绀碧色极夜之前，葵曾是“旧都灵”最后一名情感测绘员。在那场波及全城的“热寂坍缩”中，",
+          "unlockRequirement": []
+        }
+      ],
       "phoneNumber": "",
-      "constellation": "摩羯座"
+      "soul": "Aoi的灵魂是深海中一簇拒绝熄灭的幽蓝。她的核心是“极度的纯粹”与“宿命般的易碎”：那是为了守护某种微弱的真实，甘愿将自我反复打碎再重构的决绝。她被一种名为“归属感”的乡愁驱动，却在靠近人群时，因无法兼容的灵魂频率而陷入更深的静默。她是渴望拥抱阳光的冰川，潜在的冲突在于：一旦获得梦寐以求的温暖，她引以为傲的自我便会迎来彻底的消融。她在清醒中沉沦，在永恒的疏离里，等待那场能将她击穿的共鸣。"
     },
     {
       "id": "auntie",
@@ -144,20 +171,23 @@
       "birthDate": "01-01",
       "bloodType": "O",
       "info": [],
-      "phoneNumber": ""
+      "phoneNumber": "",
+      "soul": ""
     },
     {
       "id": "haruno",
       "name": "haruno",
       "favor": {},
       "isProtagonist": false,
-      "height": 165,
-      "weight": 50,
+      "height": 162,
+      "weight": 48,
       "age": 18,
-      "birthDate": "01-01",
+      "birthDate": "07-15",
       "bloodType": "O",
       "info": [],
-      "phoneNumber": ""
+      "phoneNumber": "",
+      "constellation": "巨蟹座",
+      "soul": "# 🎨 01. 原野 (Haruno)\n\n- **角色内核**：一个通过“对未知的好奇”，来试图逃避“梦想坠落真相”的失意天才。\n- **关系定位**：【心动兴趣 - 可选结局伴侣】\n- **体格属性 (Physical Specs)**：\n  - **年纪**：18 岁 (由于伤病复读中)\n  - **身高/体重**：162cm / 48kg\n  - **生日/血型**：7 月 15 日 / O 型\n- **外貌/立绘细节**：\n  - 标志性的校服外套系在腰间。左手腕戴着一根黑色护腕（掩盖 13 岁事故留下的狰狞伤疤）。\n  - 兜里总是装着半截已经折断的素描铅笔。\n- **深层动机 (Full)**：\n  - 曾经是都市里的美术神童。由于一次事故右手受损（不可逆的神经抖动），她无法再画出以前那种精确的线条。\n  - 她逃避到这个小镇，寻找那堵只有童年记忆里的“彩虹墙”，希望能通过找到它，找回握笔的勇气。\n- **性格癖好 (Soul Injection)**：\n  - **习惯/癖好**：紧张时会咬手指，画不出画时会疯狂嚼烈性薄荷糖。\n  - **鲜活反差点**：她是全镇公认的“超级路痴”，能记住每个角落的裂纹质地，却记不住车站的分路口。她总是用“我只是在找灵感，不是迷路”来嘴硬。\n  - **语感/语气**：说话快且脆。喜欢用“...的话”作为反问句尾，用来遮盖她内心对自己手颤的自卑。\n- **关联目标 (Strategy)**：\n  - 展示你对艺术的敏感（Sensitivity）。不要同情她的伤，要赞美她即便颤抖的笔触下依然蕴含的“野性”，陪她共同绘制最后一幅画。\n"
     },
     {
       "id": "kaisheng",
@@ -170,7 +200,8 @@
       "birthDate": "01-01",
       "bloodType": "O",
       "info": [],
-      "phoneNumber": ""
+      "phoneNumber": "",
+      "soul": ""
     },
     {
       "id": "mrlin",
@@ -183,7 +214,8 @@
       "birthDate": "01-01",
       "bloodType": "O",
       "info": [],
-      "phoneNumber": ""
+      "phoneNumber": "",
+      "soul": ""
     },
     {
       "id": "protagonist",
@@ -196,7 +228,8 @@
       "birthDate": "01-01",
       "bloodType": "O",
       "info": [],
-      "phoneNumber": ""
+      "phoneNumber": "",
+      "soul": ""
     },
     {
       "id": "yuki",
@@ -209,7 +242,8 @@
       "birthDate": "01-01",
       "bloodType": "O",
       "info": [],
-      "phoneNumber": ""
+      "phoneNumber": "",
+      "soul": ""
     }
   ]
 }

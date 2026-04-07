@@ -4,13 +4,11 @@ import { Delete, Plus } from '@element-plus/icons-vue';
 
 const props = defineProps<{
     modelValue: any[];
-    nodeIds: string[]; // Options for jump target
-    // Pass data for ActionListEditor
-    characterIds: string[];
-    characterProfiles: Map<string, any>;
-    portraitHandles: Map<string, Map<string, any>>;
-    portraitUrls: Map<string, string>;
+    state: any;
 }>();
+
+
+
 
 const emit = defineEmits(['update:modelValue']);
 
@@ -52,22 +50,14 @@ function updateChoice() {
                     title="选项前置条件" 
                     v-model="choice.requirement" 
                     allowed-type="judge"
-                    :character-ids="characterIds"
-                    :character-profiles="characterProfiles"
-                    :portrait-handles="portraitHandles"
-                    :portrait-urls="portraitUrls"
-                    :all-node-ids="nodeIds"
+                    :state="props.state"
                     @change="updateChoice"
                  />
                  <ActionListEditor 
                     title="执行动作" 
                     v-model="choice.action" 
                     allowed-type="action"
-                    :character-ids="characterIds"
-                    :character-profiles="characterProfiles"
-                    :portrait-handles="portraitHandles"
-                    :portrait-urls="portraitUrls"
-                    :all-node-ids="nodeIds"
+                    :state="props.state"
                     @change="updateChoice"
                  />
             </div>
