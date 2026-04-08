@@ -30,7 +30,13 @@ body, html {
 .game-layer {
   position: absolute; inset: 0; width: 100vw; height: 100vh;
   z-index: 50; display: flex; flex-direction: column; cursor: pointer;
-  background: transparent; /* 移除可能的黑底干扰 */
+  background: transparent;
+  transition: filter 0.5s ease;
+}
+
+.game-layer.is-blurred {
+  filter: blur(20px) brightness(0.7);
+  pointer-events: none; /* 模糊时禁止点击底层对话 */
 }
 
 .game-bg-layer {
@@ -41,26 +47,33 @@ body, html {
   filter: brightness(1.1); /* 略微提亮，增加清透感 */
 }
 
-/* --- Narrative Labels (TOP CENTERED) --- */
+/* --- Narrative Labels (CENTERED) --- */
 .floating-scene-label {
-  position: absolute; top: 10%; left: 0; width: 100%;
-  display: flex; align-items: center; justify-content: center;
-  z-index: 2000; pointer-events: none; padding: 0 5vw;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  pointer-events: none;
+  padding-bottom: 5vh; /* 视觉补偿，稍微提一点点避免由于导航条造成的心理偏心 */
 }
 
 .floating-scene-label .label {
-  font-size: clamp(1.2rem, 3vw, 2.2rem); 
+  font-size: clamp(1.4rem, 4vw, 2.6rem); 
   font-weight: 500; 
-  letter-spacing: 0.8rem;
+  letter-spacing: 0.2rem;
   text-transform: uppercase;
   color: #fff;
-  text-shadow: 0 0 20px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,1); /* 深度投影，应对亮背景 */
+  text-shadow: 
+    0 4px 20px rgba(0,0,0,0.8),
+    0 0 40px rgba(0,0,0,0.4);
   text-align: center;
-  padding: 1rem 0;
-  border-bottom: 2px solid rgba(255,255,255,0.2);
-  width: 100%;
-  max-width: 80vw;
-  opacity: 1; /* 强制不透明 */
+  width: auto;
+  min-width: max-content;
+  max-width: 95vw;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 /* --- Dialogue HUD (Refined Bottom Bar) --- */
 .dialogue-system {
@@ -110,7 +123,7 @@ body, html {
 .menu-item { font-size: 2rem; font-weight: 700; cursor: pointer; opacity: 0.5; transition: 0.4s; }
 .menu-item:hover { opacity: 1; transform: translateX(30px); color: var(--accent); }
 
-/* --- Smartphone Master Replica --- */
+/* --- Smartphone Master Replica (Refined) --- */
 .game-sidebar-tools { position: absolute; top: 1.5rem; right: 1.5rem; z-index: 800; }
 .phone-btn {
   width: 58px; height: 58px; border-radius: 50%; background: rgba(255,255,255,0.1);
@@ -122,21 +135,71 @@ body, html {
   backdrop-filter: blur(25px); display: flex; align-items: center; justify-content: center;
 }
 .smartphone { 
-  width: min(390px, 90vw); height: min(820px, 92vh); background: #000; 
-  border: 4px solid #333; border-radius: 40px; overflow: hidden;
-  box-shadow: 0 50px 150px rgba(0,0,0,1); position: relative;
+  width: 350px; height: 720px;
+  background: url('/ui/phone/phone_bg.webp') center/cover no-repeat;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 48px;
+  position: relative;
+  box-shadow: 
+    0 40px 100px rgba(0, 0, 0, 0.6),
+    0 0 0 4px #1a1a1a,
+    0 0 0 6px #333;
+  overflow: hidden;
+  display: flex; flex-direction: column;
 }
-.phone-screen {
-  flex: 1; position: relative;
-  background: #111 url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop') center/cover !important;
+.phone-screen { 
+  flex: 1; position: relative; overflow: hidden;
+  background: rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(20px) brightness(0.9);
 }
-.app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; padding: 2rem 1.2rem; }
-.icon-bg { width: 62px; height: 62px; border-radius: 14px; background: #222; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
-.icon-bg.map-app { background: #34c759; }
-.icon-bg.msg-app { background: #007aff; }
-.icon-bg.contact-app { background: #5856d6; }
-.icon-bg.phone-app { background: #32d74b; }
-.phone-dock { height: 90px; margin: auto 1rem 1.5rem; background: rgba(255,255,255,0.12); border-radius: 32px; display: flex; justify-content: space-evenly; align-items: center; }
+.is-app-open .phone-screen { background: #fdf6f0 !important; backdrop-filter: none; }
+
+.app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; padding: 110px 1.2rem 2rem; }
+.icon-bg { 
+  width: 62px; height: 62px; border-radius: 14px; 
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  display: flex; align-items: center; justify-content: center; 
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.2); 
+}
+.icon-bg:hover { transform: scale(1.1); }
+
+/* 图标资源映射 (使用 Public 目录) */
+.icon-bg.map-app { background-image: url('/ui/phone/map.webp'); }
+.icon-bg.msg-app { background-image: url('/ui/phone/message.webp'); }
+.icon-bg.contact-app { background-image: url('/ui/phone/contact.webp'); }
+.icon-bg.settings-app { background-image: url('/ui/phone/settings.webp'); }
+.icon-bg.notes-app { background-image: url('/ui/phone/notes.webp'); }
+.icon-bg.photos-app { background-image: url('/ui/phone/photos.webp'); }
+
+.app-icon { 
+  display: flex; flex-direction: column; align-items: center; 
+  gap: 4px; cursor: pointer; 
+}
+.app-label { 
+  font-size: 0.68rem; font-weight: 500; opacity: 0.9; 
+  white-space: nowrap; width: 100%; text-align: center;
+}
+
+.phone-dock { 
+    position: absolute; bottom: 35px; left: 5%;
+    width: 90%; height: 90px; 
+    background: rgba(255, 255, 255, 0.22); backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 32px; 
+    display: flex; justify-content: space-evenly; align-items: center; 
+}
+
+.phone-home-indicator {
+  position: absolute; bottom: 10px; left: 50%;
+  transform: translateX(-50%);
+  width: 120px; height: 5px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px; cursor: pointer;
+  z-index: 1050;
+  transition: all 0.3s;
+}
+.phone-home-indicator:hover { background: #fff; transform: translateX(-50%) scaleX(1.1); }
+.is-app-open .phone-home-indicator { background: rgba(0, 0, 0, 0.2); }
 
 /* Transitions */
 .loading-screen { position: absolute; inset: 0; background: #000; z-index: 10000; display: flex; justify-content: center; align-items: center; }
