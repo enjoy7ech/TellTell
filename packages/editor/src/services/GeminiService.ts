@@ -40,8 +40,8 @@ export class GeminiService {
 
     private getCommonConfig() {
         return {
-            temperature: 0.9,
-            topP: 0.95,
+            temperature: Number(localStorage.getItem('ai_temperature')) || 0.9,
+            topP: Number(localStorage.getItem('ai_top_p')) || 0.95,
             maxOutputTokens: 1024
         };
     }
@@ -54,7 +54,10 @@ export class GeminiService {
             draftContext = `\n用户当前已输入的草稿内容为: "${context.userDraft.trim()}"。请基于此草稿进行续写、补全或优化。`;
         }
 
-        const prompt = `你是一个专业的二次元文字冒险游戏剧本作家。当前角色: ${context.charName}。背景: ${context.plot}。对话记录: \n${context.lastDialogs.join('\n')}\n${draftContext}\n要求：只返回台词正文。`;
+        const writingStyle = localStorage.getItem('ai_writing_style') || "";
+        const styleContext = writingStyle ? `\n文笔要求：${writingStyle}。` : "";
+
+        const prompt = `你是一个专业的二次元文字冒险游戏剧本作家。当前角色: ${context.charName}。背景: ${context.plot}。${styleContext}\n对话记录: \n${context.lastDialogs.join('\n')}\n${draftContext}\n要求：只返回台词正文。`;
         try {
             const result = await this.client.models.generateContent({
                 model: this.currentModel,
@@ -106,7 +109,11 @@ export class GeminiService {
 
     public async generatePortrait(userPrompt: string, referenceImage?: string) {
         if (!this.client) return { error: "请先配置 API Key" };
-        const finalPrompt = `${userPrompt}。要求生成人物半身照，宽度比例限制在 200 像素左右。背景为统一的纯绿色 (#00FF00)，纵横比为 9:16。`;
+        
+        const artStyle = localStorage.getItem('ai_art_style') || "";
+        const stylePrefix = artStyle ? `风格描述：${artStyle}。` : "";
+        
+        const finalPrompt = `${stylePrefix}${userPrompt}。要求生成人物半身照，宽度比例限制在 200 像素左右。背景为统一的纯绿色 (#00FF00)，纵横比为 9:16。`;
         try {
             if (this.imageModel.includes('gemini') || this.imageModel.includes('banana')) {
                 let refBase64 = "";

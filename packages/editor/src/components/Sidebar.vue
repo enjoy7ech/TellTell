@@ -12,7 +12,7 @@ const props = defineProps<{
     statusText: string;
 }>();
 
-defineEmits(['select-node', 'edit-profile', 'open-dir', 'save', 'publish', 'play']);
+defineEmits(['select-node', 'edit-profile', 'open-dir', 'save', 'publish', 'play', 'open-ai-settings']);
 
 const globalState = inject<any>('state');
 const currentTab = ref('story');
@@ -132,6 +132,17 @@ function handleImageModelChange(val: string) {
                         <el-divider />
                         <el-option label="Imagen 4.0 Standard" value="imagen-4.0-generate-001" />
                     </el-select>
+
+                    <el-button 
+                        size="small" 
+                        type="primary" 
+                        plain 
+                        :icon="MagicStick"
+                        @click="$emit('open-ai-settings')"
+                        style="width: 100%; font-weight: 700; border-style: dashed;"
+                    >
+                        AI 创作深度设定
+                    </el-button>
                 </div>
             </div>
         </div>

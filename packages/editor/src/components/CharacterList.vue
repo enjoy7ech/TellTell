@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { inject } from 'vue';
+import { Plus } from '@element-plus/icons-vue';
+import { ElMessageBox } from 'element-plus';
+
 const props = defineProps<{
     characterIds: string[];
     characterProfiles: Map<string, any>;
@@ -6,6 +10,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(['edit-profile']);
+const globalState = inject<any>('state');
 
 const getThumb = (charId: string) => {
     for (const [key, url] of props.portraitUrls.entries()) {
@@ -13,12 +18,45 @@ const getThumb = (charId: string) => {
     }
     return '';
 };
+
+async function handleAddCharacter() {
+    try {
+        const result = await ElMessageBox.prompt('请输入新角色的 ID (仅限英文/数字/下划线)', '新增角色', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            inputPattern: /^[a-zA-Z0-9_-]+$/,
+            inputErrorMessage: 'ID 格式不正确 (仅支持字母、数字、下划线)',
+            title: '新增角色'
+        });
+        
+        if (result && result.value) {
+            console.log("Attempting to create character:", result.value);
+            const success = await globalState.editorService.createCharacter(result.value);
+            if (!success) {
+                console.error("Failed to create character in service");
+            }
+        }
+    } catch (e) {
+        console.log("User cancelled or error in prompt", e);
+    }
+}
 </script>
 
 <template>
     <div class="char-meta-list">
+        <!-- Add Character Button -->
+        <div class="char-meta-item add-btn" @click="handleAddCharacter">
+            <div class="char-thumb add-thumb">
+                 <el-icon><Plus /></el-icon>
+            </div>
+            <div class="char-info">
+                <div class="char-name-display" style="font-weight: 800; color: #3b82f6;">新增角色</div>
+            </div>
+        </div>
+
+        <!-- Character list using globalState for deep reactivity -->
         <div 
-            v-for="id in characterIds" 
+            v-for="id in (globalState?.characterIds || characterIds)" 
             :key="id" 
             class="char-meta-item"
             @click="$emit('edit-profile', id)"
@@ -29,12 +67,14 @@ const getThumb = (charId: string) => {
             </div>
             <div class="char-info">
                 <span class="char-meta-id">{{ id }}</span>
-                <div class="char-name-display">{{ characterProfiles.get(id)?.name || id }}</div>
+                <div class="char-name-display">
+                    {{ (globalState?.characterProfiles?.get(id) || characterProfiles.get(id))?.name || id }}
+                </div>
             </div>
             <div class="edit-profile-badge">档案</div>
         </div>
         
-        <div v-if="characterIds.length === 0" class="empty-state">
+        <div v-if="(globalState?.characterIds?.length || characterIds.length) === 0" class="empty-state">
             未发现角色资源
         </div>
     </div>
@@ -129,6 +169,22 @@ const getThumb = (charId: string) => {
 .char-meta-item:hover .edit-profile-badge {
     color: #ffffff;
     background: #3b82f6;
+}
+
+.add-btn {
+    border: 2px dashed #e2e8f0;
+    background: transparent;
+}
+
+.add-btn:hover {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.02);
+}
+
+.add-thumb {
+    background: #f8fafc;
+    color: #3b82f6;
+    border-style: dashed;
 }
 
 .empty-state {

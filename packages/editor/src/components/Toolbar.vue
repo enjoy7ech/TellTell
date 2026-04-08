@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Box, CaretRight, Plus } from '@element-plus/icons-vue';
+import { Box, Plus } from '@element-plus/icons-vue';
 
 defineProps<{
     statusText: string;

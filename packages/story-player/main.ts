@@ -1,6 +1,5 @@
 import { Engine } from '@telltell/core';
-import { FlatLayout } from '@telltell/layout-flat';
-import '@telltell/layout-flat/index.css'
+import { FlatLayout } from './index';
 import './index.css';
 
 async function bootstrap() {

@@ -43,7 +43,6 @@ export class Engine {
     public async init(): Promise<void> {
         try {
             this.registerModule(new CharacterManager());
-            this.registerModule(new MapManager());
             this.registerModule(new DateTimeManager());
 
             const configResp = await fetch(this.config.configUrl!);
@@ -353,6 +352,7 @@ export class Engine {
         try {
             const pluginRegistry: { [key: string]: () => Promise<any> } = {
                 'mobile': async () => (await import('@telltell/plugin-mobile')).PhoneSystem,
+                'map': async () => (await import('@telltell/plugin-map')).MapSystem,
             };
             for (const p of plugins) {
                 const pluginId = typeof p === 'string' ? p : p.id;

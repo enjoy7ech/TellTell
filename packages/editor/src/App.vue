@@ -6,6 +6,7 @@ import GraphCanvas from './components/GraphCanvas.vue';
 import PropertyPanel from './components/PropertyPanel.vue';
 import FramePopover from './components/FramePopover.vue';
 import RelationshipGraph from './components/RelationshipGraph.vue';
+import AISettingsDialog from './components/AISettingsDialog.vue';
 import { ScriptEditorService } from './services/ScriptEditorService';
 import { GeminiService } from './services/GeminiService';
 import { Connection, View, RefreshRight, SemiSelect } from '@element-plus/icons-vue';
@@ -30,6 +31,7 @@ const state = reactive({
     previewUrl: "http://localhost:5173",
     showPreview: false,
     showGraph: false,
+    showAISettings: false,
     autoExpandFrameIndex: -1,
     
     // Graph State (Vue Flow)
@@ -101,6 +103,7 @@ function handlePlay() {
             @save="handleSave"
             @publish="handlePublish"
             @play="handlePlay"
+            @open-ai-settings="state.showAISettings = true"
         />
 
         <!-- Main Workspace -->
@@ -174,6 +177,10 @@ function handlePlay() {
             :portrait-handles="state.portraitHandles"
             :get-image-url="state.editorService?.getImageUrl"
             @close="state.showGraph = false"
+        />
+
+        <AISettingsDialog 
+            v-model:visible="state.showAISettings"
         />
     </div>
 </template>

@@ -50,6 +50,7 @@ export class ScriptEditorService {
 
     private resetState() {
         console.log("[Service] Resetting state for new directory...");
+        this.state.statusText = "正在载入...";
         
         // Revoke asset URLs to avoid memory leaks
         if (this.state.portraitUrls) {
@@ -76,6 +77,77 @@ export class ScriptEditorService {
         this.state.showGraph = false;
         if (this.state.popover) {
             this.state.popover.visible = false;
+        }
+    }
+
+    public async createCharacter(id: string) {
+        console.log(`[Service] createCharacter called with ID: ${id}`);
+        if (!id || id.trim() === "") {
+            import('element-plus').then(({ ElMessage }) => ElMessage.warning("ID 不能为空"));
+            return false;
+        }
+
+        if (this.state.characterIds.includes(id)) {
+            import('element-plus').then(({ ElMessage }) => ElMessage.error("角色 ID 已存在"));
+            return false;
+        }
+
+        try {
+            // 1. Initialize profile in state
+            const newProfile = { 
+                id, 
+                name: id, 
+                favor: {}, 
+                isProtagonist: false,
+                height: 165,
+                weight: 50,
+                age: 18,
+                birthDate: "01-01",
+                bloodType: "O",
+                info: [],
+                phoneNumber: "",
+                soul: "" 
+            };
+            
+            // 2. Update state - Use spread to trigger full reactivity swap
+            this.state.characterProfiles.set(id, newProfile);
+            const updatedIds = [...this.state.characterIds, id];
+            this.state.characterIds = updatedIds;
+            
+            console.log("[Service] State updated with new character:", id);
+
+            // 3. Selection change
+            this.showCharacterProfile(id);
+
+            // 4. Persistence (Folders)
+            if (this.directoryHandle) {
+                try {
+                    const assetsHandle = await this.directoryHandle.getDirectoryHandle("assets", { create: true });
+                    const characterRoot = await assetsHandle.getDirectoryHandle("character", { create: true });
+                    const charDir = await characterRoot.getDirectoryHandle(id, { create: true });
+                    await charDir.getDirectoryHandle("portrait", { create: true }).catch(() => {});
+                } catch (e) {
+                    console.warn("Could not create folders, might be already there or missing permissions", e);
+                }
+            }
+
+            // 5. Save profile.json / soul.md
+            await this.saveCharacter(id, newProfile);
+
+            import('element-plus').then(({ ElMessage }) => {
+                ElMessage.success({
+                    message: `角色 [${id}] 已成功创建并初始化`,
+                    duration: 3000
+                });
+            });
+            
+            return true;
+        } catch (e: any) {
+            console.error("Create character method failed:", e);
+            import('element-plus').then(({ ElMessage }) => {
+                ElMessage.error("创建失败: " + (e.message || e));
+            });
+            return false;
         }
     }
 

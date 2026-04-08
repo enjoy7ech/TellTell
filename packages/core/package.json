@@ -8,5 +8,8 @@
     ".": "./index.ts",
     "./meta/*": "./meta/*"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@telltell/plugin-mobile": "workspace:*",
+    "@telltell/plugin-map": "workspace:*"
+  }
 }

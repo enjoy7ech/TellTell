@@ -49,26 +49,14 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/core: {}
-
-  packages/demo:
+  packages/core:
     dependencies:
-      '@telltell/core':
+      '@telltell/plugin-map':
         specifier: workspace:*
-        version: link:../core
-      '@telltell/layout-flat':
-        specifier: workspace:*
-        version: link:../layout/flat
+        version: link:../plugin-map
       '@telltell/plugin-mobile':
         specifier: workspace:*
         version: link:../plugin-mobile
-    devDependencies:
-      '@vitejs/plugin-vue':
-        specifier: ^6.0.5
-        version: 6.0.5(vite@8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.7)(tsx@4.21.0))(vue@3.5.31(typescript@5.9.3))
-      vite:
-        specifier: ^8.0.1
-        version: 8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.7)(tsx@4.21.0)
 
   packages/editor:
     dependencies:
@@ -101,7 +89,19 @@ importers:
         specifier: ^8.0.1
         version: 8.0.3(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@22.19.15)(esbuild@0.27.7)(tsx@4.21.0)
 
-  packages/layout/flat:
+  packages/plugin-map:
+    dependencies:
+      '@telltell/core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/plugin-mobile:
+    dependencies:
+      '@telltell/core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/story-player:
     dependencies:
       vue:
         specifier: ^3.5.13
@@ -109,19 +109,13 @@ importers:
     devDependencies:
       '@telltell/core':
         specifier: workspace:*
-        version: link:../../core
+        version: link:../core
       '@vitejs/plugin-vue':
         specifier: ^5.2.1
         version: 5.2.4(vite@6.4.1(@types/node@22.19.15)(lightningcss@1.32.0)(tsx@4.21.0))(vue@3.5.31(typescript@5.9.3))
       vite:
         specifier: ^6.0.7
         version: 6.4.1(@types/node@22.19.15)(lightningcss@1.32.0)(tsx@4.21.0)
-
-  packages/plugin-mobile:
-    dependencies:
-      '@telltell/core':
-        specifier: workspace:*
-        version: link:../core
 
 packages:
 
